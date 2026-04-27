@@ -1,0 +1,373 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enum ─────────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum AttendanceStatus {
+  ON_TIME
+  LATE
+  ABSENT
+  LEAVE
+  NOT_CHECKED
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LeaveType {
+  SICK
+  PERSONAL
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+// ─── Academic ─────────────────────────────────────────────────────────────────
+
+model AcademicYear {
+  id        String     @id @default(cuid())
+  name      String     @unique // เช่น "2567"
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  semesters Semester[]
+}
+
+model Semester {
+  id             String       @id @default(cuid())
+  name           String       // เช่น "1", "2", "ฤดูร้อน"
+  startDate      DateTime
+  endDate        DateTime
+  isActive       Boolean      @default(false)
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  schedules      Schedule[]
+  sections       Section[]
+
+  @@unique([academicYearId, name])
+}
+
+// ─── Organization ─────────────────────────────────────────────────────────────
+
+model Faculty {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  name        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  divisions   Division[]
+  departments Department[]
+  teachers    Teacher[]
+  students    Student[]
+  courses     Course[]
+}
+
+model Division {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  name        String
+  facultyId   String
+  faculty     Faculty      @relation(fields: [facultyId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  departments Department[]
+}
+
+model Department {
+  id          String     @id @default(cuid())
+  code        String     @unique
+  name        String
+  facultyId   String
+  faculty     Faculty    @relation(fields: [facultyId], references: [id])
+  divisionId  String?
+  division    Division?  @relation(fields: [divisionId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  students    Student[]
+  teachers    Teacher[]
+  courses     Course[]
+}
+
+model YearLevel {
+  id        String    @id @default(cuid())
+  level     Int       @unique // 1, 2, 3, 4, 5, 6
+  name      String    // "ชั้นปีที่ 1"
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  students  Student[]
+  sections  Section[]
+}
+
+// ─── Location ─────────────────────────────────────────────────────────────────
+
+model Building {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  latitude     Float
+  longitude    Float
+  radiusMeters Float    @default(100)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  rooms        Room[]
+}
+
+model Room {
+  id         String     @id @default(cuid())
+  code       String     @unique
+  name       String
+  capacity   Int        @default(0)
+  buildingId String
+  building   Building   @relation(fields: [buildingId], references: [id])
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  schedules  Schedule[]
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String     @id @default(cuid())
+  username     String     @unique
+  passwordHash String
+  role         Role
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  teacher      Teacher?
+  student      Student?
+  auditLogs    AuditLog[] @relation("ModifiedBy")
+}
+
+model Teacher {
+  id              String         @id @default(cuid())
+  code            String         @unique // รหัสอาจารย์
+  firstName       String
+  lastName        String
+  email           String?        @unique
+  phone           String?
+  profileImageUrl String?
+  userId          String         @unique
+  user           User           @relation(fields: [userId], references: [id])
+  facultyId      String?
+  faculty        Faculty?       @relation(fields: [facultyId], references: [id])
+  departmentId   String?
+  department     Department?    @relation(fields: [departmentId], references: [id])
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  schedules      Schedule[]
+  leaveApprovals LeaveRequest[] @relation("ApprovedBy")
+}
+
+model Student {
+  id              String             @id @default(cuid())
+  code            String             @unique // รหัสนักศึกษา
+  firstName       String
+  lastName        String
+  email           String?            @unique
+  phone           String?
+  profileImageUrl String?
+  deviceId        String?            // device binding
+  deviceInfo      Json?              // ข้อมูลอุปกรณ์
+  userId          String             @unique
+  user         User               @relation(fields: [userId], references: [id])
+  facultyId    String?
+  faculty      Faculty?           @relation(fields: [facultyId], references: [id])
+  departmentId String?
+  department   Department?        @relation(fields: [departmentId], references: [id])
+  yearLevelId  String?
+  yearLevel    YearLevel?         @relation(fields: [yearLevelId], references: [id])
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  enrollments  Enrollment[]
+  attendances  AttendanceRecord[]
+  leaveRequests LeaveRequest[]
+}
+
+// ─── Course & Schedule ────────────────────────────────────────────────────────
+
+model Course {
+  id           String      @id @default(cuid())
+  code         String      @unique
+  name         String
+  credits      Int         @default(3)
+  facultyId    String?
+  faculty      Faculty?    @relation(fields: [facultyId], references: [id])
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  sections     Section[]
+}
+
+model Section {
+  id          String       @id @default(cuid())
+  name        String       // เช่น "กลุ่ม 1", "Section A"
+  courseId    String
+  course      Course       @relation(fields: [courseId], references: [id])
+  semesterId  String
+  semester    Semester     @relation(fields: [semesterId], references: [id])
+  yearLevelId String?
+  yearLevel   YearLevel?   @relation(fields: [yearLevelId], references: [id])
+  maxStudents Int?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  schedules   Schedule[]
+  enrollments Enrollment[]
+
+  @@unique([courseId, semesterId, name])
+}
+
+model Schedule {
+  id                 String              @id @default(cuid())
+  dayOfWeek          DayOfWeek
+  startTime          String              // "HH:MM"
+  endTime            String              // "HH:MM"
+  sectionId          String
+  section            Section             @relation(fields: [sectionId], references: [id])
+  roomId             String
+  room               Room                @relation(fields: [roomId], references: [id])
+  teacherId          String
+  teacher            Teacher             @relation(fields: [teacherId], references: [id])
+  semesterId         String
+  semester           Semester            @relation(fields: [semesterId], references: [id])
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  attendanceRecords  AttendanceRecord[]
+  attendanceSettings AttendanceSettings?
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id])
+  sectionId String
+  section   Section  @relation(fields: [sectionId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([studentId, sectionId])
+}
+
+// ─── Attendance ───────────────────────────────────────────────────────────────
+
+model AttendanceSettings {
+  id                 String   @id @default(cuid())
+  scheduleId         String   @unique
+  schedule           Schedule @relation(fields: [scheduleId], references: [id])
+  openBeforeMinutes  Int      @default(15) // เปิดให้เช็คก่อนคาบกี่นาที
+  closeAfterMinutes  Int      @default(30) // ปิดหลังคาบเริ่มกี่นาที
+  lateAfterMinutes   Int      @default(15) // สายหลังคาบเริ่มกี่นาที
+  absentAfterMinutes Int      @default(30) // ขาดหลังกี่นาที
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model AttendanceRecord {
+  id            String           @id @default(cuid())
+  studentId     String
+  student       Student          @relation(fields: [studentId], references: [id])
+  scheduleId    String
+  schedule      Schedule         @relation(fields: [scheduleId], references: [id])
+  classDate     DateTime         // วันที่ของคาบเรียนนั้น
+  checkedAt     DateTime?        // เวลาที่เช็คจริง
+  status        AttendanceStatus @default(NOT_CHECKED)
+  selfieUrl     String?
+  latitude      Float?
+  longitude     Float?
+  deviceId      String?
+  deviceInfo    Json?
+  isFlagged     Boolean          @default(false)
+  flagReasons   String[]         // เหตุผลที่ flag
+  note          String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  leaveRequests LeaveRequest[]
+  auditLogs     AuditLog[]
+
+  @@unique([studentId, scheduleId, classDate])
+}
+
+// ─── Leave Request ────────────────────────────────────────────────────────────
+
+model LeaveRequest {
+  id                 String             @id @default(cuid())
+  studentId          String
+  student            Student            @relation(fields: [studentId], references: [id])
+  attendanceRecordId String
+  attendanceRecord   AttendanceRecord   @relation(fields: [attendanceRecordId], references: [id])
+  leaveType          LeaveType          @default(SICK)
+  reason             String
+  evidenceUrl        String?
+  status             LeaveRequestStatus @default(PENDING)
+  approvedById       String?
+  approvedBy         Teacher?           @relation("ApprovedBy", fields: [approvedById], references: [id])
+  approvedAt         DateTime?
+  rejectReason       String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+// ─── Audit Log ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id                 String           @id @default(cuid())
+  attendanceRecordId String
+  attendanceRecord   AttendanceRecord @relation(fields: [attendanceRecordId], references: [id])
+  modifiedById       String
+  modifiedBy         User             @relation("ModifiedBy", fields: [modifiedById], references: [id])
+  previousStatus     AttendanceStatus
+  newStatus          AttendanceStatus
+  reason             String
+  createdAt          DateTime         @default(now())
+}
+
+// ─── Notification ─────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  data      Json?
+  isRead    Boolean  @default(false)
+  sentAt    DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ─── System Settings ──────────────────────────────────────────────────────────
+
+model SystemSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
