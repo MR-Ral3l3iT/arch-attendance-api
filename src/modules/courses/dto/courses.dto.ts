@@ -6,7 +6,10 @@ export class CreateCourseDto {
   @IsString()
   code: string;
 
-  @ApiProperty({ description: 'ชื่อวิชา', example: 'การเขียนโปรแกรมคอมพิวเตอร์' })
+  @ApiProperty({
+    description: 'ชื่อวิชา',
+    example: 'การเขียนโปรแกรมคอมพิวเตอร์',
+  })
   @IsString()
   name: string;
 
@@ -42,7 +45,9 @@ export class CreateSectionDto {
   @IsString()
   semesterId: string;
 
-  @ApiPropertyOptional({ description: 'รหัสชั้นปี (ใช้กรองนักศึกษาตอนผูกเข้ากลุ่ม)' })
+  @ApiPropertyOptional({
+    description: 'รหัสชั้นปี (ใช้กรองนักศึกษาตอนผูกเข้ากลุ่ม)',
+  })
   @IsString()
   @IsOptional()
   yearLevelId?: string;

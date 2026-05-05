@@ -11,7 +11,11 @@ type ServiceAccountLike = {
   private_key?: string;
 };
 
-function resolveCredentialsFromEnv(): { projectId: string; clientEmail: string; privateKey: string } | null {
+function resolveCredentialsFromEnv(): {
+  projectId: string;
+  clientEmail: string;
+  privateKey: string;
+} | null {
   const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
   const privateKeyRaw = process.env.FIREBASE_PRIVATE_KEY ?? '';
@@ -22,7 +26,11 @@ function resolveCredentialsFromEnv(): { projectId: string; clientEmail: string; 
   return { projectId, clientEmail, privateKey };
 }
 
-function resolveCredentialsFromFile(): { projectId: string; clientEmail: string; privateKey: string } | null {
+function resolveCredentialsFromFile(): {
+  projectId: string;
+  clientEmail: string;
+  privateKey: string;
+} | null {
   const keyPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim();
   if (!keyPath) {
     return null;
@@ -31,20 +39,28 @@ function resolveCredentialsFromFile(): { projectId: string; clientEmail: string;
     ? keyPath
     : path.join(process.cwd(), keyPath);
   if (!fs.existsSync(absolutePath)) {
-    throw new ServiceUnavailableException(`Firebase service account file not found at ${absolutePath}`);
+    throw new ServiceUnavailableException(
+      `Firebase service account file not found at ${absolutePath}`,
+    );
   }
-  const parsed = JSON.parse(fs.readFileSync(absolutePath, 'utf8')) as ServiceAccountLike;
+  const parsed = JSON.parse(
+    fs.readFileSync(absolutePath, 'utf8'),
+  ) as ServiceAccountLike;
   const projectId = parsed.project_id?.trim();
   const clientEmail = parsed.client_email?.trim();
   const privateKey = (parsed.private_key ?? '').replace(/\\n/g, '\n').trim();
   if (!projectId || !clientEmail || !privateKey) {
-    throw new ServiceUnavailableException('Invalid Firebase service account JSON. Missing project_id, client_email, or private_key.');
+    throw new ServiceUnavailableException(
+      'Invalid Firebase service account JSON. Missing project_id, client_email, or private_key.',
+    );
   }
   return { projectId, clientEmail, privateKey };
 }
 
 function resolveStorageBucket(projectId: string): string {
-  return process.env.FIREBASE_STORAGE_BUCKET?.trim() || `${projectId}.appspot.com`;
+  return (
+    process.env.FIREBASE_STORAGE_BUCKET?.trim() || `${projectId}.appspot.com`
+  );
 }
 
 export function ensureFirebaseAppInitialized(): App {
@@ -94,7 +110,12 @@ export async function uploadBufferToFirebaseStorage(params: {
     // Optimize image files before upload to reduce storage and bandwidth.
     uploadBuffer = await sharp(params.buffer)
       .rotate()
-      .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+      .resize({
+        width: 1600,
+        height: 1600,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
       .webp({ quality: 78 })
       .toBuffer();
     uploadMimeType = 'image/webp';
@@ -114,7 +135,9 @@ export async function uploadBufferToFirebaseStorage(params: {
   return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
 }
 
-export async function deleteFirebaseStorageFileByUrl(fileUrl: string | null | undefined): Promise<void> {
+export async function deleteFirebaseStorageFileByUrl(
+  fileUrl: string | null | undefined,
+): Promise<void> {
   if (!fileUrl) {
     return;
   }

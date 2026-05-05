@@ -18,7 +18,11 @@ import { uploadBufferToFirebaseStorage } from '../../common/firebase/firebase-ad
 export class LeaveRequestsService {
   constructor(private prisma: PrismaService) {}
 
-  async createLeaveRequest(user: JwtPayload, dto: CreateLeaveRequestDto, evidenceFile?: Express.Multer.File) {
+  async createLeaveRequest(
+    user: JwtPayload,
+    dto: CreateLeaveRequestDto,
+    evidenceFile?: Express.Multer.File,
+  ) {
     if (!user.studentId) throw new ForbiddenException('เฉพาะนักศึกษาเท่านั้น');
 
     let record: { id: string; studentId: string };
@@ -27,7 +31,8 @@ export class LeaveRequestsService {
         where: { id: dto.attendanceRecordId },
       });
       if (!foundRecord) throw new NotFoundException('ไม่พบรายการเช็คชื่อ');
-      if (foundRecord.studentId !== user.studentId) throw new ForbiddenException('ไม่มีสิทธิ์ยื่นคำขอลานี้');
+      if (foundRecord.studentId !== user.studentId)
+        throw new ForbiddenException('ไม่มีสิทธิ์ยื่นคำขอลานี้');
       record = foundRecord;
     } else if (dto.scheduleId) {
       const enrollment = await this.prisma.enrollment.findFirst({
@@ -40,10 +45,13 @@ export class LeaveRequestsService {
           },
         },
       });
-      if (!enrollment) throw new ForbiddenException('ไม่มีสิทธิ์ยื่นคำขอลาสำหรับวิชานี้');
+      if (!enrollment)
+        throw new ForbiddenException('ไม่มีสิทธิ์ยื่นคำขอลาสำหรับวิชานี้');
 
       const now = new Date();
-      const classDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      const classDate = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+      );
       record = await this.prisma.attendanceRecord.upsert({
         where: {
           studentId_scheduleId_classDate: {
@@ -62,7 +70,9 @@ export class LeaveRequestsService {
         },
       });
     } else {
-      throw new BadRequestException('กรุณาระบุ attendanceRecordId หรือ scheduleId');
+      throw new BadRequestException(
+        'กรุณาระบุ attendanceRecordId หรือ scheduleId',
+      );
     }
 
     const existing = await this.prisma.leaveRequest.findFirst({
@@ -71,7 +81,8 @@ export class LeaveRequestsService {
         status: LeaveRequestStatus.PENDING,
       },
     });
-    if (existing) throw new BadRequestException('มีคำขอลาที่รอการอนุมัติอยู่แล้ว');
+    if (existing)
+      throw new BadRequestException('มีคำขอลาที่รอการอนุมัติอยู่แล้ว');
 
     const evidenceUrl = evidenceFile
       ? await uploadBufferToFirebaseStorage({
@@ -95,7 +106,13 @@ export class LeaveRequestsService {
   }
 
   async findAllPaginated(
-    params: { page: number; limit: number; status?: LeaveRequestStatus; search?: string; classDate?: string },
+    params: {
+      page: number;
+      limit: number;
+      status?: LeaveRequestStatus;
+      search?: string;
+      classDate?: string;
+    },
     teacherId?: string,
   ) {
     const { page, limit, status, search, classDate } = params;
@@ -105,7 +122,7 @@ export class LeaveRequestsService {
     if (teacherId) attendanceRecordFilter.schedule = { teacherId };
     if (classDate) {
       const start = new Date(`${classDate}T00:00:00.000Z`);
-      const end   = new Date(`${classDate}T23:59:59.999Z`);
+      const end = new Date(`${classDate}T23:59:59.999Z`);
       attendanceRecordFilter.classDate = { gte: start, lte: end };
     }
 
@@ -118,8 +135,8 @@ export class LeaveRequestsService {
         student: {
           OR: [
             { firstName: { contains: search, mode: 'insensitive' as const } },
-            { lastName:  { contains: search, mode: 'insensitive' as const } },
-            { code:      { contains: search, mode: 'insensitive' as const } },
+            { lastName: { contains: search, mode: 'insensitive' as const } },
+            { code: { contains: search, mode: 'insensitive' as const } },
           ],
         },
       }),
@@ -181,7 +198,9 @@ export class LeaveRequestsService {
       include: {
         student: true,
         attendanceRecord: {
-          include: { schedule: { include: { section: { include: { course: true } } } } },
+          include: {
+            schedule: { include: { section: { include: { course: true } } } },
+          },
         },
       },
       orderBy: { createdAt: 'asc' },
@@ -193,7 +212,9 @@ export class LeaveRequestsService {
       where: { studentId },
       include: {
         attendanceRecord: {
-          include: { schedule: { include: { section: { include: { course: true } } } } },
+          include: {
+            schedule: { include: { section: { include: { course: true } } } },
+          },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -201,7 +222,8 @@ export class LeaveRequestsService {
   }
 
   async approveLeaveRequest(id: string, teacher: JwtPayload) {
-    if (!teacher.teacherId) throw new ForbiddenException('เฉพาะอาจารย์เท่านั้น');
+    if (!teacher.teacherId)
+      throw new ForbiddenException('เฉพาะอาจารย์เท่านั้น');
 
     const request = await this.prisma.leaveRequest.findUnique({
       where: { id },
@@ -239,10 +261,17 @@ export class LeaveRequestsService {
     return updated;
   }
 
-  async rejectLeaveRequest(id: string, teacher: JwtPayload, dto: RejectLeaveRequestDto) {
-    if (!teacher.teacherId) throw new ForbiddenException('เฉพาะอาจารย์เท่านั้น');
+  async rejectLeaveRequest(
+    id: string,
+    teacher: JwtPayload,
+    dto: RejectLeaveRequestDto,
+  ) {
+    if (!teacher.teacherId)
+      throw new ForbiddenException('เฉพาะอาจารย์เท่านั้น');
 
-    const request = await this.prisma.leaveRequest.findUnique({ where: { id } });
+    const request = await this.prisma.leaveRequest.findUnique({
+      where: { id },
+    });
     if (!request) throw new NotFoundException('ไม่พบคำขอลา');
     if (request.status !== LeaveRequestStatus.PENDING) {
       throw new BadRequestException('คำขอลานี้ถูกดำเนินการแล้ว');
@@ -259,10 +288,16 @@ export class LeaveRequestsService {
     });
   }
 
-  async updateStudentPendingRequest(id: string, user: JwtPayload, dto: UpdateLeaveRequestDto) {
+  async updateStudentPendingRequest(
+    id: string,
+    user: JwtPayload,
+    dto: UpdateLeaveRequestDto,
+  ) {
     if (!user.studentId) throw new ForbiddenException('เฉพาะนักศึกษาเท่านั้น');
 
-    const request = await this.prisma.leaveRequest.findUnique({ where: { id } });
+    const request = await this.prisma.leaveRequest.findUnique({
+      where: { id },
+    });
     if (!request) throw new NotFoundException('ไม่พบคำขอลา');
     if (request.studentId !== user.studentId) {
       throw new ForbiddenException('ไม่มีสิทธิ์แก้ไขคำขอลานี้');

@@ -15,14 +15,19 @@ export class AttendanceSettingsController {
   constructor(private readonly settingsService: AttendanceSettingsService) {}
 
   @Get(':scheduleId')
-  @ApiOperation({ summary: 'ดูเงื่อนไขเช็คชื่อของตารางเรียน (fallback เป็น default ถ้าไม่มี override)' })
+  @ApiOperation({
+    summary:
+      'ดูเงื่อนไขเช็คชื่อของตารางเรียน (fallback เป็น default ถ้าไม่มี override)',
+  })
   getSettings(@Param('scheduleId') scheduleId: string) {
     return this.settingsService.getSettings(scheduleId);
   }
 
   @Put(':scheduleId')
   @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: 'ตั้งค่า/แก้ไขเงื่อนไขเช็คชื่อรายวิชา (อาจารย์ override ได้)' })
+  @ApiOperation({
+    summary: 'ตั้งค่า/แก้ไขเงื่อนไขเช็คชื่อรายวิชา (อาจารย์ override ได้)',
+  })
   upsertSettings(
     @Param('scheduleId') scheduleId: string,
     @Body() dto: UpsertAttendanceSettingsDto,

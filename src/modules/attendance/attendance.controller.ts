@@ -1,15 +1,31 @@
 import {
-  Controller, Post, Get, Patch, Body, Param, Query,
-  UseGuards, UseInterceptors, UploadedFile,
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import {
-  ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiQuery,
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { AttendanceService } from './attendance.service';
-import { CheckInDto, UpdateAttendanceStatusDto, TeacherMarkDto } from './dto/attendance.dto';
+import {
+  CheckInDto,
+  UpdateAttendanceStatusDto,
+  TeacherMarkDto,
+} from './dto/attendance.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -39,7 +55,8 @@ export class AttendanceController {
   )
   @ApiOperation({
     summary: 'เช็คชื่อเข้าเรียน (นักศึกษา)',
-    description: 'ตรวจสอบ 4 ปัจจัย: สิทธิ์เรียน + ช่วงเวลา + GPS + Device แล้วบันทึก Selfie',
+    description:
+      'ตรวจสอบ 4 ปัจจัย: สิทธิ์เรียน + ช่วงเวลา + GPS + Device แล้วบันทึก Selfie',
   })
   @ApiConsumes('multipart/form-data')
   checkIn(
@@ -59,8 +76,14 @@ export class AttendanceController {
 
   @Get('schedule/:scheduleId/stats')
   @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: 'สรุปสถิติเช็คชื่อรายคาบ (onTime/late/absent/leave/notChecked)' })
-  @ApiQuery({ name: 'classDate', required: false, description: 'วันที่ (YYYY-MM-DD) default = วันนี้' })
+  @ApiOperation({
+    summary: 'สรุปสถิติเช็คชื่อรายคาบ (onTime/late/absent/leave/notChecked)',
+  })
+  @ApiQuery({
+    name: 'classDate',
+    required: false,
+    description: 'วันที่ (YYYY-MM-DD) default = วันนี้',
+  })
   getScheduleStats(
     @Param('scheduleId') scheduleId: string,
     @Query('classDate') classDate?: string,
@@ -71,12 +94,19 @@ export class AttendanceController {
   @Get('schedule/:scheduleId')
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: 'ดูรายชื่อเช็คชื่อรายคาบ (อาจารย์/Admin)' })
-  @ApiQuery({ name: 'classDate', required: false, description: 'วันที่ (YYYY-MM-DD)' })
+  @ApiQuery({
+    name: 'classDate',
+    required: false,
+    description: 'วันที่ (YYYY-MM-DD)',
+  })
   getBySchedule(
     @Param('scheduleId') scheduleId: string,
     @Query('classDate') classDate?: string,
   ) {
-    return this.attendanceService.getAttendanceBySchedule(scheduleId, classDate);
+    return this.attendanceService.getAttendanceBySchedule(
+      scheduleId,
+      classDate,
+    );
   }
 
   @Get('student/:studentId')
@@ -86,7 +116,10 @@ export class AttendanceController {
     @Param('studentId') studentId: string,
     @Query('scheduleId') scheduleId?: string,
   ) {
-    return this.attendanceService.getStudentAttendanceHistory(studentId, scheduleId);
+    return this.attendanceService.getStudentAttendanceHistory(
+      studentId,
+      scheduleId,
+    );
   }
 
   @Get('flags')

@@ -7,7 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto, RefreshTokenDto } from './dto/login.dto';
 import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
@@ -39,7 +39,11 @@ export class AuthService {
       if (!dto.deviceId) {
         throw new BadRequestException('กรุณาระบุรหัสอุปกรณ์สำหรับนักศึกษา');
       }
-      await this.handleDeviceBinding(user.student!.id, dto.deviceId, dto.deviceInfo);
+      await this.handleDeviceBinding(
+        user.student!.id,
+        dto.deviceId,
+        dto.deviceInfo,
+      );
     }
 
     const payload: JwtPayload = {
@@ -55,7 +59,9 @@ export class AuthService {
     ]);
 
     const firstName =
-      user.teacher?.firstName ?? user.student?.firstName ?? (user.role === Role.ADMIN ? user.username : undefined);
+      user.teacher?.firstName ??
+      user.student?.firstName ??
+      (user.role === Role.ADMIN ? user.username : undefined);
     const lastName = user.teacher?.lastName ?? user.student?.lastName ?? '';
 
     return {
@@ -115,8 +121,11 @@ export class AuthService {
       // ผูก device ครั้งแรก
       await this.prisma.student.update({
         where: { id: studentId },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data: { deviceId, deviceInfo: (deviceInfo ?? {}) as any },
+
+        data: {
+          deviceId,
+          deviceInfo: (deviceInfo ?? {}) as Prisma.InputJsonValue,
+        },
       });
     } else if (student.deviceId !== deviceId) {
       throw new ForbiddenException(
@@ -126,8 +135,9 @@ export class AuthService {
   }
 
   private signAccessToken(payload: JwtPayload) {
-    const expiresIn = (this.config.get<string>('JWT_EXPIRES_IN') ?? '7d') as never;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const expiresIn = (this.config.get<string>('JWT_EXPIRES_IN') ??
+      '7d') as never;
+
     return this.jwt.signAsync(payload as any, {
       secret: this.config.get<string>('JWT_SECRET'),
       expiresIn,
@@ -135,8 +145,9 @@ export class AuthService {
   }
 
   private signRefreshToken(payload: JwtPayload) {
-    const expiresIn = (this.config.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '30d') as never;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const expiresIn = (this.config.get<string>('JWT_REFRESH_EXPIRES_IN') ??
+      '30d') as never;
+
     return this.jwt.signAsync(payload as any, {
       secret: this.config.get<string>('JWT_REFRESH_SECRET'),
       expiresIn,

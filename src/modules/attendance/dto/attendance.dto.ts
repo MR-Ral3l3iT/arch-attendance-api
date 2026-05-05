@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNumber, IsDateString, IsOptional, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsDateString,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
 import { AttendanceStatus } from '@prisma/client';
 
 export class CheckInDto {
@@ -7,7 +13,10 @@ export class CheckInDto {
   @IsString()
   scheduleId: string;
 
-  @ApiProperty({ description: 'วันที่คาบเรียน (YYYY-MM-DD)', example: '2024-09-02' })
+  @ApiProperty({
+    description: 'วันที่คาบเรียน (YYYY-MM-DD)',
+    example: '2024-09-02',
+  })
   @IsDateString()
   classDate: string;
 

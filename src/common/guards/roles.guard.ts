@@ -4,6 +4,10 @@ import { Role } from '@prisma/client';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 
+type RequestWithUser = {
+  user?: JwtPayload;
+};
+
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
@@ -15,7 +19,8 @@ export class RolesGuard implements CanActivate {
     ]);
     if (!requiredRoles) return true;
 
-    const user: JwtPayload = context.switchToHttp().getRequest().user;
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
+    const user = request.user as JwtPayload;
     return requiredRoles.includes(user.role);
   }
 }

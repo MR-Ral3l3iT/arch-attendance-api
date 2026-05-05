@@ -1,7 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DayOfWeek } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateScheduleDto, UpdateScheduleDto, CreateEnrollmentDto, BulkEnrollmentDto } from './dto/schedules.dto';
+import {
+  CreateScheduleDto,
+  UpdateScheduleDto,
+  CreateEnrollmentDto,
+  BulkEnrollmentDto,
+} from './dto/schedules.dto';
 
 function prismaDayFromJsDate(d: Date): DayOfWeek {
   const map: DayOfWeek[] = [
@@ -32,7 +37,11 @@ export class SchedulesService {
     });
   }
 
-  async findAllSchedules(filters?: { semesterId?: string; teacherId?: string; sectionId?: string }) {
+  async findAllSchedules(filters?: {
+    semesterId?: string;
+    teacherId?: string;
+    sectionId?: string;
+  }) {
     return this.prisma.schedule.findMany({
       where: {
         ...(filters?.semesterId && { semesterId: filters.semesterId }),
@@ -40,7 +49,12 @@ export class SchedulesService {
         ...(filters?.sectionId && { sectionId: filters.sectionId }),
       },
       include: {
-        section: { include: { course: true, semester: { include: { academicYear: true } } } },
+        section: {
+          include: {
+            course: true,
+            semester: { include: { academicYear: true } },
+          },
+        },
         room: { include: { building: true } },
         teacher: true,
         semester: true,
@@ -86,7 +100,12 @@ export class SchedulesService {
 
   async enroll(dto: CreateEnrollmentDto) {
     return this.prisma.enrollment.upsert({
-      where: { studentId_sectionId: { studentId: dto.studentId, sectionId: dto.sectionId } },
+      where: {
+        studentId_sectionId: {
+          studentId: dto.studentId,
+          sectionId: dto.sectionId,
+        },
+      },
       create: dto,
       update: {},
       include: { student: true, section: { include: { course: true } } },
@@ -94,7 +113,10 @@ export class SchedulesService {
   }
 
   async bulkEnroll(dto: BulkEnrollmentDto) {
-    const results = { success: 0, failed: [] as { studentId: string; reason: string }[] };
+    const results = {
+      success: 0,
+      failed: [] as { studentId: string; reason: string }[],
+    };
 
     for (const studentId of dto.studentIds) {
       try {
@@ -133,7 +155,12 @@ export class SchedulesService {
     return this.prisma.schedule.findMany({
       where: { teacherId, ...(semesterId && { semesterId }) },
       include: {
-        section: { include: { course: true, semester: { include: { academicYear: true } } } },
+        section: {
+          include: {
+            course: true,
+            semester: { include: { academicYear: true } },
+          },
+        },
         room: { include: { building: true } },
         semester: true,
       },
@@ -164,7 +191,12 @@ export class SchedulesService {
         ...(effectiveSemesterId && { semesterId: effectiveSemesterId }),
       },
       include: {
-        section: { include: { course: true, semester: { include: { academicYear: true } } } },
+        section: {
+          include: {
+            course: true,
+            semester: { include: { academicYear: true } },
+          },
+        },
         room: { include: { building: true } },
         semester: true,
       },
@@ -189,7 +221,12 @@ export class SchedulesService {
         dayOfWeek,
       },
       include: {
-        section: { include: { course: true, semester: { include: { academicYear: true } } } },
+        section: {
+          include: {
+            course: true,
+            semester: { include: { academicYear: true } },
+          },
+        },
         room: { include: { building: true } },
         semester: true,
       },

@@ -19,7 +19,11 @@ export class ReportsService {
         include: {
           student: {
             select: {
-              id: true, code: true, firstName: true, lastName: true, profileImageUrl: true,
+              id: true,
+              code: true,
+              firstName: true,
+              lastName: true,
+              profileImageUrl: true,
               department: { select: { name: true } },
             },
           },
@@ -32,7 +36,8 @@ export class ReportsService {
       }),
     ]);
 
-    const totalClasses = new Set(records.map((r) => r.classDate.toISOString())).size;
+    const totalClasses = new Set(records.map((r) => r.classDate.toISOString()))
+      .size;
 
     const byStudent = new Map<string, typeof records>();
     for (const r of records) {
@@ -53,17 +58,21 @@ export class ReportsService {
         totalClasses,
       },
       students: enrollments.map((e) => {
-        const recs   = byStudent.get(e.studentId) ?? [];
+        const recs = byStudent.get(e.studentId) ?? [];
         const onTime = count(recs, AttendanceStatus.ON_TIME);
-        const late   = count(recs, AttendanceStatus.LATE);
+        const late = count(recs, AttendanceStatus.LATE);
         const absent = count(recs, AttendanceStatus.ABSENT);
-        const leave  = count(recs, AttendanceStatus.LEAVE);
+        const leave = count(recs, AttendanceStatus.LEAVE);
         const present = onTime + late;
         return {
           student: e.student,
-          onTime, late, absent, leave,
+          onTime,
+          late,
+          absent,
+          leave,
           notChecked: totalClasses - recs.length,
-          attendanceRate: totalClasses > 0 ? Math.round((present / totalClasses) * 100) : 0,
+          attendanceRate:
+            totalClasses > 0 ? Math.round((present / totalClasses) * 100) : 0,
         };
       }),
     };
@@ -76,7 +85,9 @@ export class ReportsService {
       _count: { status: true },
     });
 
-    const total = await this.prisma.attendanceRecord.count({ where: { scheduleId } });
+    const total = await this.prisma.attendanceRecord.count({
+      where: { scheduleId },
+    });
     const summary: Record<string, number> = {};
     for (const r of records) {
       summary[r.status] = r._count.status;
@@ -109,7 +120,10 @@ export class ReportsService {
       );
       for (const r of s.attendanceRecords) counts[r.status]++;
       const total = s.attendanceRecords.length;
-      const present = (counts[AttendanceStatus.ON_TIME] ?? 0) + (counts[AttendanceStatus.LATE] ?? 0) + (counts[AttendanceStatus.LEAVE] ?? 0);
+      const present =
+        (counts[AttendanceStatus.ON_TIME] ?? 0) +
+        (counts[AttendanceStatus.LATE] ?? 0) +
+        (counts[AttendanceStatus.LEAVE] ?? 0);
       const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
 
       return {
@@ -137,7 +151,9 @@ export class ReportsService {
           section: {
             course: {
               ...(filters.facultyId && { facultyId: filters.facultyId }),
-              ...(filters.departmentId && { departmentId: filters.departmentId }),
+              ...(filters.departmentId && {
+                departmentId: filters.departmentId,
+              }),
             },
           },
         },

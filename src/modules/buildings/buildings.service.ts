@@ -1,8 +1,14 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
-  CreateBuildingDto, UpdateBuildingDto,
-  CreateRoomDto, UpdateRoomDto,
+  CreateBuildingDto,
+  UpdateBuildingDto,
+  CreateRoomDto,
+  UpdateRoomDto,
 } from './dto/buildings.dto';
 
 @Injectable()
@@ -10,7 +16,9 @@ export class BuildingsService {
   constructor(private prisma: PrismaService) {}
 
   async createBuilding(dto: CreateBuildingDto) {
-    const exists = await this.prisma.building.findUnique({ where: { code: dto.code } });
+    const exists = await this.prisma.building.findUnique({
+      where: { code: dto.code },
+    });
     if (exists) throw new ConflictException(`รหัสอาคาร ${dto.code} มีอยู่แล้ว`);
     return this.prisma.building.create({ data: dto });
   }
@@ -42,7 +50,9 @@ export class BuildingsService {
   }
 
   async createRoom(dto: CreateRoomDto) {
-    const exists = await this.prisma.room.findUnique({ where: { code: dto.code } });
+    const exists = await this.prisma.room.findUnique({
+      where: { code: dto.code },
+    });
     if (exists) throw new ConflictException(`รหัสห้อง ${dto.code} มีอยู่แล้ว`);
     return this.prisma.room.create({ data: dto, include: { building: true } });
   }
@@ -66,7 +76,11 @@ export class BuildingsService {
 
   async updateRoom(id: string, dto: UpdateRoomDto) {
     await this.findOneRoom(id);
-    return this.prisma.room.update({ where: { id }, data: dto, include: { building: true } });
+    return this.prisma.room.update({
+      where: { id },
+      data: dto,
+      include: { building: true },
+    });
   }
 
   async removeRoom(id: string) {

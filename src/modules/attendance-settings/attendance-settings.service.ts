@@ -16,7 +16,9 @@ export class AttendanceSettingsService {
   async getSettings(scheduleId: string) {
     const settings = await this.prisma.attendanceSettings.findUnique({
       where: { scheduleId },
-      include: { schedule: { include: { section: { include: { course: true } } } } },
+      include: {
+        schedule: { include: { section: { include: { course: true } } } },
+      },
     });
     return settings ?? { ...DEFAULT_SETTINGS, scheduleId, isDefault: true };
   }

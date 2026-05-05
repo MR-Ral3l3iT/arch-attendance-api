@@ -1,7 +1,21 @@
 import {
-  Controller, Get, Post, Delete, Body, Param, Query, UseGuards, HttpCode, HttpStatus,
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { EnrollmentsService } from './enrollments.service';
 import { CreateEnrollmentDto } from './dto/enrollment.dto';
@@ -32,7 +46,11 @@ export class EnrollmentsController {
 
   @Get()
   @ApiOperation({ summary: 'ดูรายชื่อนักศึกษาที่ลงทะเบียนในกลุ่มเรียน' })
-  @ApiQuery({ name: 'sectionId', required: true, description: 'รหัสกลุ่มเรียน' })
+  @ApiQuery({
+    name: 'sectionId',
+    required: true,
+    description: 'รหัสกลุ่มเรียน',
+  })
   findBySectionId(@Query('sectionId') sectionId: string) {
     return this.enrollmentsService.findBySectionId(sectionId);
   }

@@ -1,10 +1,24 @@
 import {
-  Controller, Get, Post, Patch, Body, Param, Query, UseGuards,
-  UploadedFile, UseInterceptors,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { LeaveRequestStatus } from '@prisma/client';
 import { Role } from '@prisma/client';
 import { LeaveRequestsService } from './leave-requests.service';
@@ -28,12 +42,22 @@ export class LeaveRequestsController {
 
   @Get()
   @Roles(Role.ADMIN, Role.TEACHER)
-  @ApiOperation({ summary: 'ดูรายการคำขอลาทั้งหมด (paginated, scoped to teacher)' })
+  @ApiOperation({
+    summary: 'ดูรายการคำขอลาทั้งหมด (paginated, scoped to teacher)',
+  })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'status', required: false, enum: LeaveRequestStatus })
-  @ApiQuery({ name: 'search', required: false, description: 'ชื่อ / รหัสนักศึกษา' })
-  @ApiQuery({ name: 'classDate', required: false, description: 'วันที่ขาด (YYYY-MM-DD)' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'ชื่อ / รหัสนักศึกษา',
+  })
+  @ApiQuery({
+    name: 'classDate',
+    required: false,
+    description: 'วันที่ขาด (YYYY-MM-DD)',
+  })
   findAll(
     @CurrentUser() user: JwtPayload,
     @Query('page') page = '1',
@@ -44,7 +68,13 @@ export class LeaveRequestsController {
   ) {
     const teacherId = user.role === Role.TEACHER ? user.teacherId : undefined;
     return this.leaveRequestsService.findAllPaginated(
-      { page: parseInt(page, 10), limit: parseInt(limit, 10), status, search, classDate },
+      {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+        status,
+        search,
+        classDate,
+      },
       teacherId,
     );
   }
@@ -56,7 +86,10 @@ export class LeaveRequestsController {
       storage: memoryStorage(),
     }),
   )
-  @ApiOperation({ summary: 'ยื่นคำขอลา (นักศึกษา)', description: 'แนบหลักฐานได้ (ไม่บังคับ)' })
+  @ApiOperation({
+    summary: 'ยื่นคำขอลา (นักศึกษา)',
+    description: 'แนบหลักฐานได้ (ไม่บังคับ)',
+  })
   @ApiConsumes('multipart/form-data')
   createLeaveRequest(
     @CurrentUser() user: JwtPayload,
@@ -94,7 +127,9 @@ export class LeaveRequestsController {
 
   @Patch(':id/approve')
   @Roles(Role.TEACHER, Role.ADMIN)
-  @ApiOperation({ summary: 'อนุมัติคำขอลา — สถานะเปลี่ยนเป็น LEAVE + บันทึก Audit Log' })
+  @ApiOperation({
+    summary: 'อนุมัติคำขอลา — สถานะเปลี่ยนเป็น LEAVE + บันทึก Audit Log',
+  })
   approve(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.leaveRequestsService.approveLeaveRequest(id, user);
   }

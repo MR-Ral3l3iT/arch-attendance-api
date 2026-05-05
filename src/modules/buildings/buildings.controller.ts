@@ -1,12 +1,27 @@
 import {
-  Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query,
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { BuildingsService } from './buildings.service';
 import {
-  CreateBuildingDto, UpdateBuildingDto,
-  CreateRoomDto, UpdateRoomDto,
+  CreateBuildingDto,
+  UpdateBuildingDto,
+  CreateRoomDto,
+  UpdateRoomDto,
 } from './dto/buildings.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -61,7 +76,11 @@ export class BuildingsController {
 
   @Get('rooms')
   @ApiOperation({ summary: 'ดูรายการห้องเรียน' })
-  @ApiQuery({ name: 'buildingId', required: false, description: 'กรองตามอาคาร' })
+  @ApiQuery({
+    name: 'buildingId',
+    required: false,
+    description: 'กรองตามอาคาร',
+  })
   findAllRooms(@Query('buildingId') buildingId?: string) {
     return this.buildingsService.findAllRooms(buildingId);
   }

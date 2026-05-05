@@ -24,7 +24,10 @@ export class CreateAcademicYearDto {
   @IsDateString()
   endDate: string;
 
-  @ApiPropertyOptional({ description: 'ปีการศึกษาที่กำลังใช้งาน', default: false })
+  @ApiPropertyOptional({
+    description: 'ปีการศึกษาที่กำลังใช้งาน',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
@@ -51,7 +54,10 @@ export class CreateSemesterDto {
   @IsString()
   academicYearId: string;
 
-  @ApiPropertyOptional({ description: 'ภาคการศึกษาที่กำลังใช้งาน', default: false })
+  @ApiPropertyOptional({
+    description: 'ภาคการศึกษาที่กำลังใช้งาน',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
@@ -80,7 +86,10 @@ export class CreateDivisionDto {
   @IsString()
   code: string;
 
-  @ApiProperty({ description: 'ชื่อภาควิชา', example: 'ภาควิชาวิศวกรรมคอมพิวเตอร์' })
+  @ApiProperty({
+    description: 'ชื่อภาควิชา',
+    example: 'ภาควิชาวิศวกรรมคอมพิวเตอร์',
+  })
   @IsString()
   name: string;
 

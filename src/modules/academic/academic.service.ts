@@ -1,12 +1,22 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
-  CreateAcademicYearDto, UpdateAcademicYearDto,
-  CreateSemesterDto, UpdateSemesterDto,
-  CreateFacultyDto, UpdateFacultyDto,
-  CreateDivisionDto, UpdateDivisionDto,
-  CreateDepartmentDto, UpdateDepartmentDto,
-  CreateYearLevelDto, UpdateYearLevelDto,
+  CreateAcademicYearDto,
+  UpdateAcademicYearDto,
+  CreateSemesterDto,
+  UpdateSemesterDto,
+  CreateFacultyDto,
+  UpdateFacultyDto,
+  CreateDivisionDto,
+  UpdateDivisionDto,
+  CreateDepartmentDto,
+  UpdateDepartmentDto,
+  CreateYearLevelDto,
+  UpdateYearLevelDto,
 } from './dto/academic.dto';
 
 @Injectable()
@@ -82,7 +92,9 @@ export class AcademicService {
   // ── Faculty ───────────────────────────────────────────────────────────────
 
   async createFaculty(dto: CreateFacultyDto) {
-    const exists = await this.prisma.faculty.findUnique({ where: { code: dto.code } });
+    const exists = await this.prisma.faculty.findUnique({
+      where: { code: dto.code },
+    });
     if (exists) throw new ConflictException(`รหัสคณะ ${dto.code} มีอยู่แล้ว`);
     return this.prisma.faculty.create({ data: dto });
   }
@@ -116,9 +128,15 @@ export class AcademicService {
   // ── Division ──────────────────────────────────────────────────────────────
 
   async createDivision(dto: CreateDivisionDto) {
-    const exists = await this.prisma.division.findUnique({ where: { code: dto.code } });
-    if (exists) throw new ConflictException(`รหัสภาควิชา ${dto.code} มีอยู่แล้ว`);
-    return this.prisma.division.create({ data: dto, include: { faculty: true } });
+    const exists = await this.prisma.division.findUnique({
+      where: { code: dto.code },
+    });
+    if (exists)
+      throw new ConflictException(`รหัสภาควิชา ${dto.code} มีอยู่แล้ว`);
+    return this.prisma.division.create({
+      data: dto,
+      include: { faculty: true },
+    });
   }
 
   async findAllDivisions(facultyId?: string) {
@@ -140,7 +158,11 @@ export class AcademicService {
 
   async updateDivision(id: string, dto: UpdateDivisionDto) {
     await this.findOneDivision(id);
-    return this.prisma.division.update({ where: { id }, data: dto, include: { faculty: true } });
+    return this.prisma.division.update({
+      where: { id },
+      data: dto,
+      include: { faculty: true },
+    });
   }
 
   async removeDivision(id: string) {
@@ -151,9 +173,14 @@ export class AcademicService {
   // ── Department ────────────────────────────────────────────────────────────
 
   async createDepartment(dto: CreateDepartmentDto) {
-    const exists = await this.prisma.department.findUnique({ where: { code: dto.code } });
+    const exists = await this.prisma.department.findUnique({
+      where: { code: dto.code },
+    });
     if (exists) throw new ConflictException(`รหัสสาขา ${dto.code} มีอยู่แล้ว`);
-    return this.prisma.department.create({ data: dto, include: { faculty: true, division: true } });
+    return this.prisma.department.create({
+      data: dto,
+      include: { faculty: true, division: true },
+    });
   }
 
   async findAllDepartments(facultyId?: string, divisionId?: string) {
@@ -178,7 +205,11 @@ export class AcademicService {
 
   async updateDepartment(id: string, dto: UpdateDepartmentDto) {
     await this.findOneDepartment(id);
-    return this.prisma.department.update({ where: { id }, data: dto, include: { faculty: true, division: true } });
+    return this.prisma.department.update({
+      where: { id },
+      data: dto,
+      include: { faculty: true, division: true },
+    });
   }
 
   async removeDepartment(id: string) {

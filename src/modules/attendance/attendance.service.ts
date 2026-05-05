@@ -4,20 +4,30 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AttendanceSettingsService } from '../attendance-settings/attendance-settings.service';
-import { CheckInDto, UpdateAttendanceStatusDto, TeacherMarkDto } from './dto/attendance.dto';
+import {
+  CheckInDto,
+  UpdateAttendanceStatusDto,
+  TeacherMarkDto,
+} from './dto/attendance.dto';
 import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { uploadBufferToFirebaseStorage } from '../../common/firebase/firebase-admin';
 
-function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function haversineDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
   const R = 6371000;
   const φ1 = (lat1 * Math.PI) / 180;
   const φ2 = (lat2 * Math.PI) / 180;
   const Δφ = ((lat2 - lat1) * Math.PI) / 180;
   const Δλ = ((lon2 - lon1) * Math.PI) / 180;
-  const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+  const a =
+    Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -33,10 +43,16 @@ export class AttendanceService {
     private settingsService: AttendanceSettingsService,
   ) {}
 
-  async checkIn(user: JwtPayload, dto: CheckInDto, selfieFile?: Express.Multer.File) {
+  async checkIn(
+    user: JwtPayload,
+    dto: CheckInDto,
+    selfieFile?: Express.Multer.File,
+  ) {
     if (!user.studentId) throw new ForbiddenException('เฉพาะนักศึกษาเท่านั้น');
 
-    const student = await this.prisma.student.findUnique({ where: { id: user.studentId } });
+    const student = await this.prisma.student.findUnique({
+      where: { id: user.studentId },
+    });
     if (!student) throw new NotFoundException('ไม่พบข้อมูลนักศึกษา');
 
     // ── 1. ตรวจ Device Binding ─────────────────────────────────────────────
@@ -57,7 +73,10 @@ export class AttendanceService {
     // ── 3. ตรวจสิทธิ์เรียน (Enrollment) ──────────────────────────────────
     const enrolled = await this.prisma.enrollment.findUnique({
       where: {
-        studentId_sectionId: { studentId: user.studentId, sectionId: schedule.sectionId },
+        studentId_sectionId: {
+          studentId: user.studentId,
+          sectionId: schedule.sectionId,
+        },
       },
     });
     if (!enrolled) throw new ForbiddenException('ไม่มีสิทธิ์เรียนในวิชานี้');
@@ -78,7 +97,9 @@ export class AttendanceService {
     }
 
     // ── 5. ตรวจช่วงเวลา ───────────────────────────────────────────────────
-    const settings = await this.settingsService.getEffectiveSettings(dto.scheduleId);
+    const settings = await this.settingsService.getEffectiveSettings(
+      dto.scheduleId,
+    );
     const now = new Date();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
     const classStartMinutes = parseTimeToMinutes(schedule.startTime);
@@ -96,7 +117,12 @@ export class AttendanceService {
 
     // ── 6. ตรวจ GPS (Haversine) ────────────────────────────────────────────
     const building = schedule.room.building;
-    const distance = haversineDistance(dto.latitude, dto.longitude, building.latitude, building.longitude);
+    const distance = haversineDistance(
+      dto.latitude,
+      dto.longitude,
+      building.latitude,
+      building.longitude,
+    );
     const isOutOfRange = distance > building.radiusMeters;
 
     // ── 7. คำนวณสถานะ ─────────────────────────────────────────────────────
@@ -108,7 +134,8 @@ export class AttendanceService {
 
     // ── 8. Flag ผิดปกติ ───────────────────────────────────────────────────
     const flagReasons: string[] = [];
-    if (isOutOfRange) flagReasons.push(`อยู่นอกรัศมีอาคาร (${Math.round(distance)} ม.)`);
+    if (isOutOfRange)
+      flagReasons.push(`อยู่นอกรัศมีอาคาร (${Math.round(distance)} ม.)`);
     if (!selfieFile) flagReasons.push('ไม่มีรูปถ่าย Selfie');
 
     const selfieUrl = selfieFile
@@ -139,8 +166,8 @@ export class AttendanceService {
         latitude: dto.latitude,
         longitude: dto.longitude,
         deviceId: dto.deviceId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        deviceInfo: (dto.deviceInfo ?? {}) as any,
+
+        deviceInfo: (dto.deviceInfo ?? {}) as Prisma.InputJsonValue,
         isFlagged: flagReasons.length > 0,
         flagReasons,
       },
@@ -151,8 +178,8 @@ export class AttendanceService {
         latitude: dto.latitude,
         longitude: dto.longitude,
         deviceId: dto.deviceId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        deviceInfo: (dto.deviceInfo ?? {}) as any,
+
+        deviceInfo: (dto.deviceInfo ?? {}) as Prisma.InputJsonValue,
         isFlagged: flagReasons.length > 0,
         flagReasons,
       },
@@ -163,7 +190,9 @@ export class AttendanceService {
       distance: Math.round(distance),
       withinRange: !isOutOfRange,
       message:
-        status === AttendanceStatus.ON_TIME ? 'เช็คชื่อสำเร็จ — ตรงเวลา' : 'เช็คชื่อสำเร็จ — มาสาย',
+        status === AttendanceStatus.ON_TIME
+          ? 'เช็คชื่อสำเร็จ — ตรงเวลา'
+          : 'เช็คชื่อสำเร็จ — มาสาย',
     };
   }
 
@@ -197,9 +226,14 @@ export class AttendanceService {
   }
 
   async teacherMark(dto: TeacherMarkDto, teacher: JwtPayload) {
-    if (!teacher.teacherId) throw new ForbiddenException('เฉพาะอาจารย์/Admin เท่านั้น');
+    if (!teacher.teacherId)
+      throw new ForbiddenException('เฉพาะอาจารย์/Admin เท่านั้น');
     const date = new Date(dto.classDate);
-    const key = { studentId: dto.studentId, scheduleId: dto.scheduleId, classDate: date };
+    const key = {
+      studentId: dto.studentId,
+      scheduleId: dto.scheduleId,
+      classDate: date,
+    };
 
     const existing = await this.prisma.attendanceRecord.findUnique({
       where: { studentId_scheduleId_classDate: key },
@@ -225,7 +259,12 @@ export class AttendanceService {
     }
 
     return this.prisma.attendanceRecord.create({
-      data: { studentId: dto.studentId, scheduleId: dto.scheduleId, classDate: date, status: dto.status },
+      data: {
+        studentId: dto.studentId,
+        scheduleId: dto.scheduleId,
+        classDate: date,
+        status: dto.status,
+      },
     });
   }
 
@@ -238,11 +277,11 @@ export class AttendanceService {
     });
     const count = (s: string) => records.filter((r) => r.status === s).length;
     return {
-      total:      records.length,
-      onTime:     count('ON_TIME'),
-      late:       count('LATE'),
-      absent:     count('ABSENT'),
-      leave:      count('LEAVE'),
+      total: records.length,
+      onTime: count('ON_TIME'),
+      late: count('LATE'),
+      absent: count('ABSENT'),
+      leave: count('LEAVE'),
       notChecked: count('NOT_CHECKED'),
     };
   }
@@ -253,7 +292,10 @@ export class AttendanceService {
         isFlagged: true,
         ...(scheduleId && { scheduleId }),
       },
-      include: { student: true, schedule: { include: { section: { include: { course: true } } } } },
+      include: {
+        student: true,
+        schedule: { include: { section: { include: { course: true } } } },
+      },
       orderBy: { checkedAt: 'desc' },
     });
   }
@@ -263,7 +305,9 @@ export class AttendanceService {
     dto: UpdateAttendanceStatusDto,
     modifier: JwtPayload,
   ) {
-    const record = await this.prisma.attendanceRecord.findUnique({ where: { id: recordId } });
+    const record = await this.prisma.attendanceRecord.findUnique({
+      where: { id: recordId },
+    });
     if (!record) throw new NotFoundException('ไม่พบรายการเช็คชื่อ');
 
     const [updated] = await this.prisma.$transaction([

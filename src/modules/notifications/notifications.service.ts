@@ -1,4 +1,8 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { getMessaging } from 'firebase-admin/messaging';
 import { Prisma } from '@prisma/client';
@@ -55,8 +59,12 @@ export class NotificationsService {
     data?: Record<string, unknown>,
   ) {
     return this.prisma.notification.create({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: { userId, title, body, data: (data ?? {}) as any },
+      data: {
+        userId,
+        title,
+        body,
+        data: (data ?? {}) as Prisma.InputJsonValue,
+      },
     });
   }
 
@@ -107,20 +115,22 @@ export class NotificationsService {
 
     let pushSent = 0;
     for (const enrollment of enrollments) {
-      const deviceInfo = (enrollment.student.deviceInfo ?? {}) as Record<string, unknown>;
-      const fcmToken = typeof deviceInfo.fcmToken === 'string' ? deviceInfo.fcmToken : null;
+      const deviceInfo = (enrollment.student.deviceInfo ?? {}) as Record<
+        string,
+        unknown
+      >;
+      const fcmToken =
+        typeof deviceInfo.fcmToken === 'string' ? deviceInfo.fcmToken : null;
       if (fcmToken == null || fcmToken.length === 0) {
         continue;
       }
       try {
-        await this.sendPushNotification(
-          fcmToken,
-          title,
-          body,
-          { type: 'ANNOUNCEMENT', sectionId },
-        );
+        await this.sendPushNotification(fcmToken, title, body, {
+          type: 'ANNOUNCEMENT',
+          sectionId,
+        });
         pushSent += 1;
-      } catch (_) {
+      } catch {
         // keep announcing others even if one token fails
       }
     }
@@ -174,7 +184,11 @@ export class NotificationsService {
     const schedules = await this.prisma.schedule.findMany({
       where: { dayOfWeek: today as never, startTime: targetTime },
       include: {
-        section: { include: { enrollments: { include: { student: { include: { user: true } } } } } },
+        section: {
+          include: {
+            enrollments: { include: { student: { include: { user: true } } } },
+          },
+        },
       },
     });
 

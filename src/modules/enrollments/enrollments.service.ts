@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateEnrollmentDto } from './dto/enrollment.dto';
 
@@ -8,9 +12,15 @@ export class EnrollmentsService {
 
   async enroll(dto: CreateEnrollmentDto) {
     const existing = await this.prisma.enrollment.findUnique({
-      where: { studentId_sectionId: { studentId: dto.studentId, sectionId: dto.sectionId } },
+      where: {
+        studentId_sectionId: {
+          studentId: dto.studentId,
+          sectionId: dto.sectionId,
+        },
+      },
     });
-    if (existing) throw new ConflictException('นักศึกษานี้ลงทะเบียนในกลุ่มนี้แล้ว');
+    if (existing)
+      throw new ConflictException('นักศึกษานี้ลงทะเบียนในกลุ่มนี้แล้ว');
 
     return this.prisma.enrollment.create({
       data: dto,
@@ -21,7 +31,9 @@ export class EnrollmentsService {
   }
 
   async unenroll(id: string) {
-    const enrollment = await this.prisma.enrollment.findUnique({ where: { id } });
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: { id },
+    });
     if (!enrollment) throw new NotFoundException('ไม่พบข้อมูลการลงทะเบียน');
     await this.prisma.enrollment.delete({ where: { id } });
     return { message: 'ยกเลิกการลงทะเบียนสำเร็จ' };

@@ -8,12 +8,19 @@ export class CreateLeaveRequestDto {
   @IsString()
   attendanceRecordId?: string;
 
-  @ApiPropertyOptional({ description: 'รหัสตารางเรียนที่ต้องการยื่นลา (ใช้เมื่อยังไม่มี attendance record)' })
+  @ApiPropertyOptional({
+    description:
+      'รหัสตารางเรียนที่ต้องการยื่นลา (ใช้เมื่อยังไม่มี attendance record)',
+  })
   @IsOptional()
   @IsString()
   scheduleId?: string;
 
-  @ApiProperty({ enum: LeaveType, description: 'ประเภทการลา', example: LeaveType.SICK })
+  @ApiProperty({
+    enum: LeaveType,
+    description: 'ประเภทการลา',
+    example: LeaveType.SICK,
+  })
   @IsEnum(LeaveType)
   leaveType: LeaveType;
 
@@ -29,7 +36,11 @@ export class RejectLeaveRequestDto {
 }
 
 export class UpdateLeaveRequestDto {
-  @ApiProperty({ enum: LeaveType, description: 'ประเภทการลา', example: LeaveType.SICK })
+  @ApiProperty({
+    enum: LeaveType,
+    description: 'ประเภทการลา',
+    example: LeaveType.SICK,
+  })
   @IsEnum(LeaveType)
   leaveType: LeaveType;
 

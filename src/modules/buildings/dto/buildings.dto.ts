@@ -18,7 +18,11 @@ export class CreateBuildingDto {
   @IsNumber()
   longitude: number;
 
-  @ApiPropertyOptional({ description: 'รัศมีขอบเขต (เมตร)', example: 100, default: 100 })
+  @ApiPropertyOptional({
+    description: 'รัศมีขอบเขต (เมตร)',
+    example: 100,
+    default: 100,
+  })
   @IsNumber()
   @Min(10)
   @Max(500)

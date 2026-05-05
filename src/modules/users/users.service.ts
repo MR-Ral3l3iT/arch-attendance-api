@@ -2,12 +2,16 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
-  BadRequestException,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateTeacherDto, UpdateTeacherDto, CreateStudentDto, UpdateStudentDto } from './dto/users.dto';
+import {
+  CreateTeacherDto,
+  UpdateTeacherDto,
+  CreateStudentDto,
+  UpdateStudentDto,
+} from './dto/users.dto';
 
 @Injectable()
 export class UsersService {
@@ -16,14 +20,30 @@ export class UsersService {
   // ── Teacher ───────────────────────────────────────────────────────────────
 
   async createTeacher(dto: CreateTeacherDto) {
-    const existing = await this.prisma.user.findUnique({ where: { username: dto.username } });
-    if (existing) throw new ConflictException(`ชื่อผู้ใช้งาน ${dto.username} มีอยู่แล้ว`);
+    const existing = await this.prisma.user.findUnique({
+      where: { username: dto.username },
+    });
+    if (existing)
+      throw new ConflictException(`ชื่อผู้ใช้งาน ${dto.username} มีอยู่แล้ว`);
 
-    const existCode = await this.prisma.teacher.findUnique({ where: { code: dto.code } });
-    if (existCode) throw new ConflictException(`รหัสอาจารย์ ${dto.code} มีอยู่แล้ว`);
+    const existCode = await this.prisma.teacher.findUnique({
+      where: { code: dto.code },
+    });
+    if (existCode)
+      throw new ConflictException(`รหัสอาจารย์ ${dto.code} มีอยู่แล้ว`);
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
-    const { password, code, firstName, lastName, email, phone, facultyId, departmentId, username } = dto;
+    const {
+      password,
+      code,
+      firstName,
+      lastName,
+      email,
+      phone,
+      facultyId,
+      departmentId,
+      username,
+    } = dto;
     void password;
 
     return this.prisma.user.create({
@@ -32,7 +52,15 @@ export class UsersService {
         passwordHash,
         role: Role.TEACHER,
         teacher: {
-          create: { code, firstName, lastName, email, phone, facultyId, departmentId },
+          create: {
+            code,
+            firstName,
+            lastName,
+            email,
+            phone,
+            facultyId,
+            departmentId,
+          },
         },
       },
       include: { teacher: true },
@@ -64,19 +92,30 @@ export class UsersService {
       this.prisma.teacher.count({ where }),
       this.prisma.teacher.findMany({
         where,
-        include: { user: { select: { username: true, isActive: true } }, faculty: true, department: true },
+        include: {
+          user: { select: { username: true, isActive: true } },
+          faculty: true,
+          department: true,
+        },
         orderBy: { code: 'asc' },
         skip: (page - 1) * limit,
         take: limit,
       }),
     ]);
-    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async findOneTeacher(id: string) {
     const teacher = await this.prisma.teacher.findUnique({
       where: { id },
-      include: { user: { select: { username: true, isActive: true } }, faculty: true, department: true },
+      include: {
+        user: { select: { username: true, isActive: true } },
+        faculty: true,
+        department: true,
+      },
     });
     if (!teacher) throw new NotFoundException(`ไม่พบอาจารย์รหัส ${id}`);
     return teacher;
@@ -84,7 +123,16 @@ export class UsersService {
 
   async updateTeacher(id: string, dto: UpdateTeacherDto) {
     const teacher = await this.findOneTeacher(id);
-    const { password, username, code, firstName, lastName, email, phone, facultyId, departmentId } = dto;
+    const {
+      password,
+      username,
+      firstName,
+      lastName,
+      email,
+      phone,
+      facultyId,
+      departmentId,
+    } = dto;
 
     const data: Record<string, unknown> = {};
     if (firstName) data.firstName = firstName;
@@ -100,7 +148,10 @@ export class UsersService {
       const userData: Record<string, unknown> = {};
       if (username) userData.username = username;
       if (password) userData.passwordHash = await bcrypt.hash(password, 12);
-      await this.prisma.user.update({ where: { id: teacher.userId }, data: userData });
+      await this.prisma.user.update({
+        where: { id: teacher.userId },
+        data: userData,
+      });
     }
 
     return this.findOneTeacher(id);
@@ -113,14 +164,21 @@ export class UsersService {
   }
 
   async bulkImportTeachers(rows: CreateTeacherDto[]) {
-    const results = { success: 0, failed: [] as { row: number; code: string; reason: string }[] };
+    const results = {
+      success: 0,
+      failed: [] as { row: number; code: string; reason: string }[],
+    };
 
     for (let i = 0; i < rows.length; i++) {
       try {
         await this.createTeacher(rows[i]);
         results.success++;
       } catch (err) {
-        results.failed.push({ row: i + 1, code: rows[i].code, reason: (err as Error).message });
+        results.failed.push({
+          row: i + 1,
+          code: rows[i].code,
+          reason: (err as Error).message,
+        });
       }
     }
 
@@ -130,15 +188,30 @@ export class UsersService {
   // ── Student ───────────────────────────────────────────────────────────────
 
   async createStudent(dto: CreateStudentDto) {
-    const existing = await this.prisma.user.findUnique({ where: { username: dto.email } });
-    if (existing) throw new ConflictException(`อีเมล ${dto.email} ถูกใช้งานแล้ว`);
+    const existing = await this.prisma.user.findUnique({
+      where: { username: dto.email },
+    });
+    if (existing)
+      throw new ConflictException(`อีเมล ${dto.email} ถูกใช้งานแล้ว`);
 
-    const existCode = await this.prisma.student.findUnique({ where: { code: dto.code } });
-    if (existCode) throw new ConflictException(`รหัสนักศึกษา ${dto.code} มีอยู่แล้ว`);
+    const existCode = await this.prisma.student.findUnique({
+      where: { code: dto.code },
+    });
+    if (existCode)
+      throw new ConflictException(`รหัสนักศึกษา ${dto.code} มีอยู่แล้ว`);
 
     // username = email, password = รหัสนักศึกษา (auto)
     const passwordHash = await bcrypt.hash(dto.code, 12);
-    const { code, firstName, lastName, email, phone, facultyId, departmentId, yearLevelId } = dto;
+    const {
+      code,
+      firstName,
+      lastName,
+      email,
+      phone,
+      facultyId,
+      departmentId,
+      yearLevelId,
+    } = dto;
 
     return this.prisma.user.create({
       data: {
@@ -146,7 +219,16 @@ export class UsersService {
         passwordHash,
         role: Role.STUDENT,
         student: {
-          create: { code, firstName, lastName, email, phone, facultyId, departmentId, yearLevelId },
+          create: {
+            code,
+            firstName,
+            lastName,
+            email,
+            phone,
+            facultyId,
+            departmentId,
+            yearLevelId,
+          },
         },
       },
       include: { student: true },
@@ -169,7 +251,9 @@ export class UsersService {
       ...(filters?.facultyId && { facultyId: filters.facultyId }),
       ...(filters?.departmentId && { departmentId: filters.departmentId }),
       ...(filters?.yearLevelId && { yearLevelId: filters.yearLevelId }),
-      ...(filters?.isActive !== undefined && { user: { isActive: filters.isActive } }),
+      ...(filters?.isActive !== undefined && {
+        user: { isActive: filters.isActive },
+      }),
       ...(search && {
         OR: [
           { code: { contains: search, mode: 'insensitive' as const } },
@@ -194,7 +278,10 @@ export class UsersService {
         take: limit,
       }),
     ]);
-    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async findOneStudent(id: string) {
@@ -213,7 +300,16 @@ export class UsersService {
 
   async updateStudent(id: string, dto: UpdateStudentDto) {
     const student = await this.findOneStudent(id);
-    const { code, firstName, lastName, email, phone, facultyId, departmentId, yearLevelId } = dto;
+    const {
+      code,
+      firstName,
+      lastName,
+      email,
+      phone,
+      facultyId,
+      departmentId,
+      yearLevelId,
+    } = dto;
 
     const data: Record<string, unknown> = {};
     if (firstName) data.firstName = firstName;
@@ -228,7 +324,10 @@ export class UsersService {
 
     // auto-sync: email เปลี่ยน → username เปลี่ยนตาม
     if (email !== undefined) {
-      await this.prisma.user.update({ where: { id: student.userId }, data: { username: email } });
+      await this.prisma.user.update({
+        where: { id: student.userId },
+        data: { username: email },
+      });
     }
 
     // suppress unused-var warning
@@ -252,14 +351,21 @@ export class UsersService {
   }
 
   async bulkImportStudents(rows: CreateStudentDto[]) {
-    const results = { success: 0, failed: [] as { row: number; code: string; reason: string }[] };
+    const results = {
+      success: 0,
+      failed: [] as { row: number; code: string; reason: string }[],
+    };
 
     for (let i = 0; i < rows.length; i++) {
       try {
         await this.createStudent(rows[i]);
         results.success++;
       } catch (err) {
-        results.failed.push({ row: i + 1, code: rows[i].code, reason: (err as Error).message });
+        results.failed.push({
+          row: i + 1,
+          code: rows[i].code,
+          reason: (err as Error).message,
+        });
       }
     }
 

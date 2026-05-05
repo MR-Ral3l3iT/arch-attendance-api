@@ -5,15 +5,23 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class AuditLogsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(filters?: { attendanceRecordId?: string; modifiedById?: string }) {
+  async findAll(filters?: {
+    attendanceRecordId?: string;
+    modifiedById?: string;
+  }) {
     return this.prisma.auditLog.findMany({
       where: {
-        ...(filters?.attendanceRecordId && { attendanceRecordId: filters.attendanceRecordId }),
+        ...(filters?.attendanceRecordId && {
+          attendanceRecordId: filters.attendanceRecordId,
+        }),
         ...(filters?.modifiedById && { modifiedById: filters.modifiedById }),
       },
       include: {
         attendanceRecord: {
-          include: { student: true, schedule: { include: { section: { include: { course: true } } } } },
+          include: {
+            student: true,
+            schedule: { include: { section: { include: { course: true } } } },
+          },
         },
         modifiedBy: { select: { username: true, role: true } },
       },

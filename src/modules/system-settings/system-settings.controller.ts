@@ -10,23 +10,39 @@ import { Roles } from '../../common/decorators/roles.decorator';
 
 class UpdateSystemSettingsDto {
   @ApiProperty({ description: 'เปิดรับเช็คชื่อก่อนคาบกี่นาที', example: 15 })
-  @IsInt() @Min(0) @Max(60) @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(60)
+  @IsOptional()
   openBeforeMinutes?: number;
 
-  @ApiProperty({ description: 'ปิดรับเช็คชื่อหลังคาบเริ่มกี่นาที', example: 30 })
-  @IsInt() @Min(0) @Max(120) @IsOptional()
+  @ApiProperty({
+    description: 'ปิดรับเช็คชื่อหลังคาบเริ่มกี่นาที',
+    example: 30,
+  })
+  @IsInt()
+  @Min(0)
+  @Max(120)
+  @IsOptional()
   closeAfterMinutes?: number;
 
   @ApiProperty({ description: 'นับว่ามาสายหลังคาบเริ่มกี่นาที', example: 15 })
-  @IsInt() @Min(1) @Max(60) @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(60)
+  @IsOptional()
   lateThresholdMinutes?: number;
 
   @ApiProperty({ description: 'รัศมีขอบเขต GPS (เมตร)', example: 100 })
-  @IsInt() @Min(10) @Max(1000) @IsOptional()
+  @IsInt()
+  @Min(10)
+  @Max(1000)
+  @IsOptional()
   gpsRadiusMeters?: number;
 
   @ApiProperty({ description: 'บังคับถ่ายรูป Selfie', example: true })
-  @IsBoolean() @IsOptional()
+  @IsBoolean()
+  @IsOptional()
   requireSelfie?: boolean;
 }
 

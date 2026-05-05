@@ -74,13 +74,23 @@ export class ProfileService {
     });
 
     if (user.role === Role.TEACHER && user.teacherId) {
-      const teacher = await this.prisma.teacher.findUnique({ where: { id: user.teacherId } });
+      const teacher = await this.prisma.teacher.findUnique({
+        where: { id: user.teacherId },
+      });
       await deleteFirebaseStorageFileByUrl(teacher?.profileImageUrl);
-      await this.prisma.teacher.update({ where: { id: user.teacherId }, data: { profileImageUrl: url } });
+      await this.prisma.teacher.update({
+        where: { id: user.teacherId },
+        data: { profileImageUrl: url },
+      });
     } else if (user.role === Role.STUDENT && user.studentId) {
-      const student = await this.prisma.student.findUnique({ where: { id: user.studentId } });
+      const student = await this.prisma.student.findUnique({
+        where: { id: user.studentId },
+      });
       await deleteFirebaseStorageFileByUrl(student?.profileImageUrl);
-      await this.prisma.student.update({ where: { id: user.studentId }, data: { profileImageUrl: url } });
+      await this.prisma.student.update({
+        where: { id: user.studentId },
+        data: { profileImageUrl: url },
+      });
     } else {
       await deleteFirebaseStorageFileByUrl(url);
       throw new BadRequestException('บัญชีนี้ไม่สามารถอัปโหลดรูปโปรไฟล์ได้');

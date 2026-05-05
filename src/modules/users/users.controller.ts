@@ -1,18 +1,46 @@
 import {
-  Controller, Get, Post, Body, Patch, Param, Delete,
-  UseGuards, Query, UploadedFile, UseInterceptors, HttpCode, HttpStatus,
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
+  UploadedFile,
+  UseInterceptors,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
-  ApiTags, ApiOperation, ApiBearerAuth, ApiQuery,
-  ApiConsumes, ApiBody,
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { UsersService } from './users.service';
-import { CreateTeacherDto, UpdateTeacherDto, CreateStudentDto, UpdateStudentDto } from './dto/users.dto';
+import {
+  CreateTeacherDto,
+  UpdateTeacherDto,
+  CreateStudentDto,
+  UpdateStudentDto,
+} from './dto/users.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+
+function parseRows<T>(raw: string): T[] {
+  const parsed: unknown = JSON.parse(raw);
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+  return parsed as T[];
+}
 
 @ApiTags('อาจารย์')
 @ApiBearerAuth('JWT')
@@ -33,8 +61,11 @@ export class TeachersController {
   @ApiOperation({ summary: 'นำเข้าข้อมูลอาจารย์ทีละมาก (CSV/JSON)' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({ description: 'ไฟล์ CSV หรือ JSON รายชื่ออาจารย์' })
-  async bulkImport(@UploadedFile() _file: Express.Multer.File, @Body() body: { data: string }) {
-    const rows: CreateTeacherDto[] = JSON.parse(body.data);
+  async bulkImport(
+    @UploadedFile() _file: Express.Multer.File,
+    @Body() body: { data: string },
+  ) {
+    const rows = parseRows<CreateTeacherDto>(body.data);
     return this.usersService.bulkImportTeachers(rows);
   }
 
@@ -55,7 +86,8 @@ export class TeachersController {
     @Query('search') search?: string,
   ) {
     return this.usersService.findAllTeachers(
-      facultyId, departmentId,
+      facultyId,
+      departmentId,
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 20,
       search,
@@ -101,8 +133,11 @@ export class StudentsController {
   @ApiOperation({ summary: 'นำเข้าข้อมูลนักศึกษาทีละมาก (CSV/JSON)' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({ description: 'ไฟล์ CSV หรือ JSON รายชื่อนักศึกษา' })
-  async bulkImport(@UploadedFile() _file: Express.Multer.File, @Body() body: { data: string }) {
-    const rows: CreateStudentDto[] = JSON.parse(body.data);
+  async bulkImport(
+    @UploadedFile() _file: Express.Multer.File,
+    @Body() body: { data: string },
+  ) {
+    const rows = parseRows<CreateStudentDto>(body.data);
     return this.usersService.bulkImportStudents(rows);
   }
 
@@ -125,8 +160,11 @@ export class StudentsController {
     @Query('search') search?: string,
   ) {
     return this.usersService.findAllStudents({
-      facultyId, departmentId, yearLevelId,
-      isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
+      facultyId,
+      departmentId,
+      yearLevelId,
+      isActive:
+        isActive === 'true' ? true : isActive === 'false' ? false : undefined,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 20,
       search,
@@ -153,7 +191,9 @@ export class StudentsController {
 
   @Patch(':id/device/reset')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'รีเซ็ต Device Binding ของนักศึกษา (Admin เท่านั้น)' })
+  @ApiOperation({
+    summary: 'รีเซ็ต Device Binding ของนักศึกษา (Admin เท่านั้น)',
+  })
   resetDevice(@Param('id') id: string) {
     return this.usersService.resetDeviceBinding(id);
   }

@@ -1,13 +1,24 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateCourseDto, UpdateCourseDto, CreateSectionDto, UpdateSectionDto } from './dto/courses.dto';
+import {
+  CreateCourseDto,
+  UpdateCourseDto,
+  CreateSectionDto,
+  UpdateSectionDto,
+} from './dto/courses.dto';
 
 @Injectable()
 export class CoursesService {
   constructor(private prisma: PrismaService) {}
 
   async createCourse(dto: CreateCourseDto) {
-    const exists = await this.prisma.course.findUnique({ where: { code: dto.code } });
+    const exists = await this.prisma.course.findUnique({
+      where: { code: dto.code },
+    });
     if (exists) throw new ConflictException(`รหัสวิชา ${dto.code} มีอยู่แล้ว`);
     return this.prisma.course.create({ data: dto });
   }
@@ -23,7 +34,11 @@ export class CoursesService {
   async findOneCourse(id: string) {
     const course = await this.prisma.course.findUnique({
       where: { id },
-      include: { faculty: true, department: true, sections: { include: { schedules: true } } },
+      include: {
+        faculty: true,
+        department: true,
+        sections: { include: { schedules: true } },
+      },
     });
     if (!course) throw new NotFoundException(`ไม่พบรายวิชารหัส ${id}`);
     return course;
@@ -81,7 +96,8 @@ export class CoursesService {
   async updateSection(id: string, dto: UpdateSectionDto) {
     await this.findOneSection(id);
     return this.prisma.section.update({
-      where: { id }, data: dto,
+      where: { id },
+      data: dto,
       include: this.sectionInclude,
     });
   }

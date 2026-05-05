@@ -1,10 +1,28 @@
 import {
-  Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query,
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { CoursesService } from './courses.service';
-import { CreateCourseDto, UpdateCourseDto, CreateSectionDto, UpdateSectionDto } from './dto/courses.dto';
+import {
+  CreateCourseDto,
+  UpdateCourseDto,
+  CreateSectionDto,
+  UpdateSectionDto,
+} from './dto/courses.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';

@@ -1,19 +1,36 @@
 import {
-  Controller, Get, Post, Body, Patch, Param, Delete,
-  UseGuards, Query,
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
 } from '@nestjs/common';
 import {
-  ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery,
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { AcademicService } from './academic.service';
 import {
-  CreateAcademicYearDto, UpdateAcademicYearDto,
-  CreateSemesterDto, UpdateSemesterDto,
-  CreateFacultyDto, UpdateFacultyDto,
-  CreateDivisionDto, UpdateDivisionDto,
-  CreateDepartmentDto, UpdateDepartmentDto,
-  CreateYearLevelDto, UpdateYearLevelDto,
+  CreateAcademicYearDto,
+  UpdateAcademicYearDto,
+  CreateSemesterDto,
+  UpdateSemesterDto,
+  CreateFacultyDto,
+  UpdateFacultyDto,
+  CreateDivisionDto,
+  UpdateDivisionDto,
+  CreateDepartmentDto,
+  UpdateDepartmentDto,
+  CreateYearLevelDto,
+  UpdateYearLevelDto,
 } from './dto/academic.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -51,7 +68,10 @@ export class AcademicController {
   @Patch('academic-years/:id')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'แก้ไขปีการศึกษา' })
-  updateAcademicYear(@Param('id') id: string, @Body() dto: UpdateAcademicYearDto) {
+  updateAcademicYear(
+    @Param('id') id: string,
+    @Body() dto: UpdateAcademicYearDto,
+  ) {
     return this.academicService.updateAcademicYear(id, dto);
   }
 
@@ -73,7 +93,11 @@ export class AcademicController {
 
   @Get('semesters')
   @ApiOperation({ summary: 'ดูรายการภาคการศึกษา' })
-  @ApiQuery({ name: 'academicYearId', required: false, description: 'กรองตามปีการศึกษา' })
+  @ApiQuery({
+    name: 'academicYearId',
+    required: false,
+    description: 'กรองตามปีการศึกษา',
+  })
   findAllSemesters(@Query('academicYearId') academicYearId?: string) {
     return this.academicService.findAllSemesters(academicYearId);
   }
@@ -181,8 +205,15 @@ export class AcademicController {
   @Get('departments')
   @ApiOperation({ summary: 'ดูรายการสาขา' })
   @ApiQuery({ name: 'facultyId', required: false, description: 'กรองตามคณะ' })
-  @ApiQuery({ name: 'divisionId', required: false, description: 'กรองตามภาควิชา' })
-  findAllDepartments(@Query('facultyId') facultyId?: string, @Query('divisionId') divisionId?: string) {
+  @ApiQuery({
+    name: 'divisionId',
+    required: false,
+    description: 'กรองตามภาควิชา',
+  })
+  findAllDepartments(
+    @Query('facultyId') facultyId?: string,
+    @Query('divisionId') divisionId?: string,
+  ) {
     return this.academicService.findAllDepartments(facultyId, divisionId);
   }
 

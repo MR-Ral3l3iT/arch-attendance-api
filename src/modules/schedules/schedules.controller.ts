@@ -1,12 +1,28 @@
 import {
-  Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, ForbiddenException,
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
+  ForbiddenException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { SchedulesService } from './schedules.service';
 import {
-  CreateScheduleDto, UpdateScheduleDto,
-  CreateEnrollmentDto, BulkEnrollmentDto,
+  CreateScheduleDto,
+  UpdateScheduleDto,
+  CreateEnrollmentDto,
+  BulkEnrollmentDto,
 } from './dto/schedules.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -38,7 +54,11 @@ export class SchedulesController {
     @Query('teacherId') teacherId?: string,
     @Query('sectionId') sectionId?: string,
   ) {
-    return this.schedulesService.findAllSchedules({ semesterId, teacherId, sectionId });
+    return this.schedulesService.findAllSchedules({
+      semesterId,
+      teacherId,
+      sectionId,
+    });
   }
 
   @Get('schedules/my/today')
@@ -53,7 +73,9 @@ export class SchedulesController {
 
   @Get('schedules/my')
   @Roles(Role.STUDENT)
-  @ApiOperation({ summary: 'ตารางเรียนของนักศึกษา — เทอมปัจจุบัน (หรือระบุ semesterId)' })
+  @ApiOperation({
+    summary: 'ตารางเรียนของนักศึกษา — เทอมปัจจุบัน (หรือระบุ semesterId)',
+  })
   @ApiQuery({ name: 'semesterId', required: false })
   findMySchedules(
     @CurrentUser() user: JwtPayload,
@@ -62,7 +84,10 @@ export class SchedulesController {
     if (!user.studentId) {
       throw new ForbiddenException('เฉพาะนักศึกษาเท่านั้น');
     }
-    return this.schedulesService.findStudentSchedules(user.studentId, semesterId);
+    return this.schedulesService.findStudentSchedules(
+      user.studentId,
+      semesterId,
+    );
   }
 
   @Get('schedules/:id')
@@ -121,7 +146,10 @@ export class EnrollmentsController {
   @Delete(':studentId/:sectionId')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'ยกเลิกการลงทะเบียน' })
-  remove(@Param('studentId') studentId: string, @Param('sectionId') sectionId: string) {
+  remove(
+    @Param('studentId') studentId: string,
+    @Param('sectionId') sectionId: string,
+  ) {
     return this.schedulesService.removeEnrollment(studentId, sectionId);
   }
 }

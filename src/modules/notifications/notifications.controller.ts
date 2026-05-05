@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -7,7 +15,11 @@ import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { NotificationsService } from './notifications.service';
-import { SendPushNotificationDto, AnnounceToSectionDto, RegisterFcmTokenDto } from './dto/notifications.dto';
+import {
+  SendPushNotificationDto,
+  AnnounceToSectionDto,
+  RegisterFcmTokenDto,
+} from './dto/notifications.dto';
 
 @ApiTags('แจ้งเตือน')
 @ApiBearerAuth('JWT')
@@ -31,10 +43,7 @@ export class NotificationsController {
 
   @Patch(':id/read')
   @ApiOperation({ summary: 'ทำเครื่องหมายว่าอ่านแล้ว (รายรายการ)' })
-  async markRead(
-    @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
-  ) {
+  async markRead(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     await this.notificationsService.markAsRead(user.sub, id);
     return { success: true };
   }
@@ -62,7 +71,11 @@ export class NotificationsController {
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: 'อาจารย์ส่งประกาศถึงนักศึกษาทุกคนในกลุ่มเรียน' })
   async announce(@Body() dto: AnnounceToSectionDto) {
-    return this.notificationsService.announceToSection(dto.sectionId, dto.title, dto.body);
+    return this.notificationsService.announceToSection(
+      dto.sectionId,
+      dto.title,
+      dto.body,
+    );
   }
 
   @Post('register-token')

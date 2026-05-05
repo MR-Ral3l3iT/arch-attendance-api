@@ -1,9 +1,21 @@
 import {
-  Controller, Get, Post, UseGuards, UseInterceptors, UploadedFile, BadRequestException,
+  Controller,
+  Get,
+  Post,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ProfileService } from './profile.service';
@@ -28,7 +40,13 @@ export class ProfileController {
   @ApiBody({
     schema: {
       type: 'object',
-      properties: { file: { type: 'string', format: 'binary', description: 'ไฟล์รูปภาพ (jpg, png, webp) สูงสุด 5MB' } },
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'ไฟล์รูปภาพ (jpg, png, webp) สูงสุด 5MB',
+        },
+      },
     },
   })
   @UseInterceptors(
@@ -36,7 +54,12 @@ export class ProfileController {
       storage: memoryStorage(),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
-          return cb(new BadRequestException('กรุณาอัปโหลดไฟล์รูปภาพเท่านั้น (jpg, png, webp)'), false);
+          return cb(
+            new BadRequestException(
+              'กรุณาอัปโหลดไฟล์รูปภาพเท่านั้น (jpg, png, webp)',
+            ),
+            false,
+          );
         }
         cb(null, true);
       },

@@ -11,11 +11,9 @@ async function bootstrap() {
   // Serve uploaded files (profile images, etc.)
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
 
-  const allowedOrigins =
-    process.env.ALLOWED_ORIGINS
-      ?.split(',')
-      .map((origin) => origin.trim())
-      .filter(Boolean) || ['http://localhost:3000', 'http://localhost:3001'];
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean) || ['http://localhost:3000', 'http://localhost:3001'];
 
   app.enableCors({
     origin: allowedOrigins,
@@ -67,4 +65,4 @@ async function bootstrap() {
   console.log(`🌐 API (LAN): http://<your-mac-ip>:${port}`);
   console.log(`📚 Swagger Docs: http://localhost:${port}/api/docs`);
 }
-bootstrap();
+void bootstrap();

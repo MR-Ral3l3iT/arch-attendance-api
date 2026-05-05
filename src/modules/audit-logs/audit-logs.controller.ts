@@ -1,5 +1,10 @@
 import { Controller, Get, Param, UseGuards, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { AuditLogsService } from './audit-logs.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';

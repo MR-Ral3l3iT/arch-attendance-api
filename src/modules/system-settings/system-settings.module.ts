@@ -4,7 +4,7 @@ import { SystemSettingsService } from './system-settings.service';
 
 @Module({
   controllers: [SystemSettingsController],
-  providers:   [SystemSettingsService],
-  exports:     [SystemSettingsService],
+  providers: [SystemSettingsService],
+  exports: [SystemSettingsService],
 })
 export class SystemSettingsModule {}

@@ -1,5 +1,10 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { ReportsService } from './reports.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -15,7 +20,9 @@ export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @Get('schedule/:scheduleId/students')
-  @ApiOperation({ summary: 'สรุปการเข้าเรียนรายนักศึกษาในวิชานั้น (พร้อม % เข้าเรียน)' })
+  @ApiOperation({
+    summary: 'สรุปการเข้าเรียนรายนักศึกษาในวิชานั้น (พร้อม % เข้าเรียน)',
+  })
   getScheduleStudentSummary(@Param('scheduleId') scheduleId: string) {
     return this.reportsService.getScheduleStudentSummary(scheduleId);
   }
@@ -33,11 +40,16 @@ export class ReportsController {
     @Param('studentId') studentId: string,
     @Query('semesterId') semesterId?: string,
   ) {
-    return this.reportsService.getStudentAttendanceSummary(studentId, semesterId);
+    return this.reportsService.getStudentAttendanceSummary(
+      studentId,
+      semesterId,
+    );
   }
 
   @Get('export')
-  @ApiOperation({ summary: 'Export ข้อมูลเช็คชื่อ (JSON — ใช้ต่อกับ xlsx ฝั่ง Frontend)' })
+  @ApiOperation({
+    summary: 'Export ข้อมูลเช็คชื่อ (JSON — ใช้ต่อกับ xlsx ฝั่ง Frontend)',
+  })
   @ApiQuery({ name: 'semesterId', required: false })
   @ApiQuery({ name: 'facultyId', required: false })
   @ApiQuery({ name: 'departmentId', required: false })
@@ -48,6 +60,11 @@ export class ReportsController {
     @Query('departmentId') departmentId?: string,
     @Query('scheduleId') scheduleId?: string,
   ) {
-    return this.reportsService.getExportData({ semesterId, facultyId, departmentId, scheduleId });
+    return this.reportsService.getExportData({
+      semesterId,
+      facultyId,
+      departmentId,
+      scheduleId,
+    });
   }
 }

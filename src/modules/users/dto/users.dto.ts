@@ -62,7 +62,10 @@ export class CreateStudentDto {
   @IsString()
   lastName: string;
 
-  @ApiProperty({ description: 'อีเมล (ใช้เป็น username เข้าสู่ระบบ)', example: 'somying@student.ac.th' })
+  @ApiProperty({
+    description: 'อีเมล (ใช้เป็น username เข้าสู่ระบบ)',
+    example: 'somying@student.ac.th',
+  })
   @IsEmail()
   email: string;
 

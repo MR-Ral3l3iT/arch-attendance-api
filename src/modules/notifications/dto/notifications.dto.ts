@@ -22,7 +22,10 @@ export class SendPushNotificationDto {
 }
 
 export class AnnounceToSectionDto {
-  @ApiProperty({ example: 'clxxx...', description: 'ID ของกลุ่มเรียน (Section)' })
+  @ApiProperty({
+    example: 'clxxx...',
+    description: 'ID ของกลุ่มเรียน (Section)',
+  })
   @IsString()
   sectionId!: string;
 
