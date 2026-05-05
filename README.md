@@ -20,6 +20,17 @@ npm run start:dev
 
 API runs at `http://localhost:3001` by default.
 
+## Firebase Storage setup
+
+For image uploads (avatar, selfie, leave evidence), configure Firebase in `.env` via one of these options:
+
+- `FIREBASE_SERVICE_ACCOUNT_PATH` (recommended for local dev, e.g. `keys/your-service-account.json`)
+- or `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`
+
+Optional:
+
+- `FIREBASE_STORAGE_BUCKET` (if omitted, defaults to `<project-id>.appspot.com`)
+
 ## Scripts
 
 ```bash

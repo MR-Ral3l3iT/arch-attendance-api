@@ -2,16 +2,12 @@ import {
   Controller, Get, Post, UseGuards, UseInterceptors, UploadedFile, BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import * as fs from 'fs';
+import { memoryStorage } from 'multer';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ProfileService } from './profile.service';
 import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
-
-const UPLOAD_DIR = './uploads/avatars';
 
 @ApiTags('โปรไฟล์')
 @ApiBearerAuth('JWT')
@@ -37,17 +33,7 @@ export class ProfileController {
   })
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: (req, file, cb) => {
-          if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-          cb(null, UPLOAD_DIR);
-        },
-        filename: (req, file, cb) => {
-          const ext = extname(file.originalname).toLowerCase() || '.jpg';
-          const unique = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-          cb(null, `${unique}${ext}`);
-        },
-      }),
+      storage: memoryStorage(),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
           return cb(new BadRequestException('กรุณาอัปโหลดไฟล์รูปภาพเท่านั้น (jpg, png, webp)'), false);

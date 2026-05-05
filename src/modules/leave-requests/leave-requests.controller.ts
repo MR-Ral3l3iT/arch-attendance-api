@@ -3,13 +3,16 @@ import {
   UploadedFile, UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiQuery } from '@nestjs/swagger';
 import { LeaveRequestStatus } from '@prisma/client';
 import { Role } from '@prisma/client';
 import { LeaveRequestsService } from './leave-requests.service';
-import { CreateLeaveRequestDto, RejectLeaveRequestDto } from './dto/leave-request.dto';
+import {
+  CreateLeaveRequestDto,
+  RejectLeaveRequestDto,
+  UpdateLeaveRequestDto,
+} from './dto/leave-request.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -29,15 +32,19 @@ export class LeaveRequestsController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'status', required: false, enum: LeaveRequestStatus })
+  @ApiQuery({ name: 'search', required: false, description: 'ชื่อ / รหัสนักศึกษา' })
+  @ApiQuery({ name: 'classDate', required: false, description: 'วันที่ขาด (YYYY-MM-DD)' })
   findAll(
     @CurrentUser() user: JwtPayload,
     @Query('page') page = '1',
     @Query('limit') limit = '20',
     @Query('status') status?: LeaveRequestStatus,
+    @Query('search') search?: string,
+    @Query('classDate') classDate?: string,
   ) {
     const teacherId = user.role === Role.TEACHER ? user.teacherId : undefined;
     return this.leaveRequestsService.findAllPaginated(
-      { page: parseInt(page, 10), limit: parseInt(limit, 10), status },
+      { page: parseInt(page, 10), limit: parseInt(limit, 10), status, search, classDate },
       teacherId,
     );
   }
@@ -46,12 +53,7 @@ export class LeaveRequestsController {
   @Roles(Role.STUDENT)
   @UseInterceptors(
     FileInterceptor('evidence', {
-      storage: diskStorage({
-        destination: './uploads/evidence',
-        filename: (_req, file, cb) => {
-          cb(null, `evidence-${Date.now()}${extname(file.originalname)}`);
-        },
-      }),
+      storage: memoryStorage(),
     }),
   )
   @ApiOperation({ summary: 'ยื่นคำขอลา (นักศึกษา)', description: 'แนบหลักฐานได้ (ไม่บังคับ)' })
@@ -77,6 +79,17 @@ export class LeaveRequestsController {
   @ApiOperation({ summary: 'ดูคำขอลาของตัวเอง (นักศึกษา)' })
   findMine(@CurrentUser() user: JwtPayload) {
     return this.leaveRequestsService.findStudentRequests(user.studentId!);
+  }
+
+  @Patch(':id')
+  @Roles(Role.STUDENT)
+  @ApiOperation({ summary: 'แก้ไขคำขอลาของตัวเอง (เฉพาะสถานะรอพิจารณา)' })
+  updateMine(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: UpdateLeaveRequestDto,
+  ) {
+    return this.leaveRequestsService.updateStudentPendingRequest(id, user, dto);
   }
 
   @Patch(':id/approve')

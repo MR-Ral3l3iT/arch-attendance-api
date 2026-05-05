@@ -1,9 +1,11 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { Role } from '@prisma/client';
-import * as fs from 'fs';
-import { join } from 'path';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
+import {
+  deleteFirebaseStorageFileByUrl,
+  uploadBufferToFirebaseStorage,
+} from '../../common/firebase/firebase-admin';
 
 @Injectable()
 export class ProfileService {
@@ -64,30 +66,26 @@ export class ProfileService {
   }
 
   async updateAvatar(user: JwtPayload, file: Express.Multer.File) {
-    const url = `/uploads/avatars/${file.filename}`;
+    const url = await uploadBufferToFirebaseStorage({
+      folder: 'avatars',
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      buffer: file.buffer,
+    });
 
     if (user.role === Role.TEACHER && user.teacherId) {
       const teacher = await this.prisma.teacher.findUnique({ where: { id: user.teacherId } });
-      if (teacher?.profileImageUrl) this.deleteFile(teacher.profileImageUrl);
+      await deleteFirebaseStorageFileByUrl(teacher?.profileImageUrl);
       await this.prisma.teacher.update({ where: { id: user.teacherId }, data: { profileImageUrl: url } });
     } else if (user.role === Role.STUDENT && user.studentId) {
       const student = await this.prisma.student.findUnique({ where: { id: user.studentId } });
-      if (student?.profileImageUrl) this.deleteFile(student.profileImageUrl);
+      await deleteFirebaseStorageFileByUrl(student?.profileImageUrl);
       await this.prisma.student.update({ where: { id: user.studentId }, data: { profileImageUrl: url } });
     } else {
-      this.deleteFile(url);
+      await deleteFirebaseStorageFileByUrl(url);
       throw new BadRequestException('บัญชีนี้ไม่สามารถอัปโหลดรูปโปรไฟล์ได้');
     }
 
     return { profileImageUrl: url };
-  }
-
-  private deleteFile(relativeUrl: string) {
-    try {
-      const filePath = join(process.cwd(), relativeUrl);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    } catch {
-      // ignore — file might already be missing
-    }
   }
 }

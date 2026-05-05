@@ -5,3 +5,5 @@ uploads/
 
 # Keep environment variables out of version control
 .env
+keys/
+*firebase-adminsdk*.json

@@ -62,8 +62,9 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT ?? 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   console.log(`🚀 API กำลังทำงานที่: http://localhost:${port}`);
+  console.log(`🌐 API (LAN): http://<your-mac-ip>:${port}`);
   console.log(`📚 Swagger Docs: http://localhost:${port}/api/docs`);
 }
 bootstrap();

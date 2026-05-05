@@ -9,6 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AttendanceSettingsService } from '../attendance-settings/attendance-settings.service';
 import { CheckInDto, UpdateAttendanceStatusDto, TeacherMarkDto } from './dto/attendance.dto';
 import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
+import { uploadBufferToFirebaseStorage } from '../../common/firebase/firebase-admin';
 
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;
@@ -110,7 +111,14 @@ export class AttendanceService {
     if (isOutOfRange) flagReasons.push(`อยู่นอกรัศมีอาคาร (${Math.round(distance)} ม.)`);
     if (!selfieFile) flagReasons.push('ไม่มีรูปถ่าย Selfie');
 
-    const selfieUrl = selfieFile ? `/uploads/selfies/${selfieFile.filename}` : null;
+    const selfieUrl = selfieFile
+      ? await uploadBufferToFirebaseStorage({
+          folder: 'selfies',
+          originalName: selfieFile.originalname,
+          mimeType: selfieFile.mimetype,
+          buffer: selfieFile.buffer,
+        })
+      : null;
 
     // ── 9. บันทึก ─────────────────────────────────────────────────────────
     const record = await this.prisma.attendanceRecord.upsert({
