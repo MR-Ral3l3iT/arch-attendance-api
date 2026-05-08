@@ -243,7 +243,9 @@ export class NotificationsService {
           scope: 'GLOBAL',
           type,
           ...(target?.facultyId ? { facultyId: target.facultyId } : {}),
-          ...(target?.departmentId ? { departmentId: target.departmentId } : {}),
+          ...(target?.departmentId
+            ? { departmentId: target.departmentId }
+            : {}),
           ...(target?.yearLevelId ? { yearLevelId: target.yearLevelId } : {}),
         },
       })),
@@ -263,7 +265,9 @@ export class NotificationsService {
           scope: 'GLOBAL',
           type,
           ...(target?.facultyId ? { facultyId: target.facultyId } : {}),
-          ...(target?.departmentId ? { departmentId: target.departmentId } : {}),
+          ...(target?.departmentId
+            ? { departmentId: target.departmentId }
+            : {}),
           ...(target?.yearLevelId ? { yearLevelId: target.yearLevelId } : {}),
         });
         pushSent += 1;
@@ -275,7 +279,11 @@ export class NotificationsService {
     return { sent: students.length, pushSent, announceId };
   }
 
-  async getAdminHistory(filters: { type?: string; page?: number; limit?: number }) {
+  async getAdminHistory(filters: {
+    type?: string;
+    page?: number;
+    limit?: number;
+  }) {
     const notifications = await this.prisma.notification.findMany({
       where: {
         data: {
@@ -339,7 +347,9 @@ export class NotificationsService {
     }
 
     return {
-      announcements: Array.from(grouped.values()).sort((a, b) => b.sentAt.localeCompare(a.sentAt)),
+      announcements: Array.from(grouped.values()).sort((a, b) =>
+        b.sentAt.localeCompare(a.sentAt),
+      ),
     };
   }
 
