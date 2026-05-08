@@ -11,13 +11,30 @@ async function bootstrap() {
   // Serve uploaded files (profile images, etc.)
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
 
-  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',')
+  const allowedOrigins = (
+    process.env.CORS_ORIGIN ??
+    process.env.ALLOWED_ORIGINS ??
+    'http://localhost:3000,http://localhost:3001'
+  )
+    .split(',')
     .map((origin) => origin.trim())
-    .filter(Boolean) || ['http://localhost:3000', 'http://localhost:3001'];
+    .filter(Boolean);
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   app.useGlobalPipes(
