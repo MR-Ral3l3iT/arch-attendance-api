@@ -71,7 +71,10 @@ class CreateHolidayDto {
   @IsString()
   semesterId!: string;
 
-  @ApiProperty({ description: 'วันที่หยุด (YYYY-MM-DD)', example: '2026-12-05' })
+  @ApiProperty({
+    description: 'วันที่หยุด (YYYY-MM-DD)',
+    example: '2026-12-05',
+  })
   @IsDateString()
   date!: string;
 

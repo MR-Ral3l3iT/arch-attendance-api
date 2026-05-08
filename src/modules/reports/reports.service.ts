@@ -15,7 +15,9 @@ function addDaysUTC(d: Date, days: number): Date {
 }
 
 function startOfDayUTC(d: Date): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  return new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+  );
 }
 
 function jsDayFromPrismaDay(d: string): number {
@@ -148,9 +150,11 @@ export class ReportsService {
         const late = count(recs, AttendanceStatus.LATE);
         const absent = count(recs, AttendanceStatus.ABSENT);
         const leaveApproved = recs.filter(
-          (r) => r.status === AttendanceStatus.LEAVE && r.leaveRequests.length > 0,
+          (r) =>
+            r.status === AttendanceStatus.LEAVE && r.leaveRequests.length > 0,
         ).length;
-        const leaveUnapproved = count(recs, AttendanceStatus.LEAVE) - leaveApproved;
+        const leaveUnapproved =
+          count(recs, AttendanceStatus.LEAVE) - leaveApproved;
         const present = onTime + late + leaveApproved;
         return {
           student: e.student,

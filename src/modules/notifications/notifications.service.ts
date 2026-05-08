@@ -124,7 +124,8 @@ export class NotificationsService {
         where: { id: opts.scheduleId },
         select: { id: true, sectionId: true, teacherId: true },
       });
-      if (!schedule) throw new NotFoundException('ไม่พบตารางเรียนที่ต้องการยกคลาส');
+      if (!schedule)
+        throw new NotFoundException('ไม่พบตารางเรียนที่ต้องการยกคลาส');
       if (schedule.sectionId !== sectionId) {
         throw new BadRequestException('scheduleId ไม่ตรงกับ section ที่ประกาศ');
       }
