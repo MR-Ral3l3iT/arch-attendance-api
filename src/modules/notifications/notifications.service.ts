@@ -5,6 +5,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { getMessaging } from 'firebase-admin/messaging';
 import { Prisma, Role } from '@prisma/client';
@@ -113,6 +114,7 @@ export class NotificationsService {
   ) {
     const type = opts?.type ?? 'GENERAL';
     const classDate = opts?.classDate ? new Date(opts.classDate) : null;
+    const announceId = randomUUID();
 
     if (type === 'CANCEL_CLASS') {
       if (!opts?.scheduleId || !classDate) {
@@ -170,6 +172,8 @@ export class NotificationsService {
         title,
         body,
         data: {
+          announceId,
+          scope: 'SECTION',
           type,
           sectionId,
           ...(opts?.scheduleId ? { scheduleId: opts.scheduleId } : {}),
@@ -191,6 +195,8 @@ export class NotificationsService {
       }
       try {
         await this.sendPushNotification(fcmToken, title, body, {
+          announceId,
+          scope: 'SECTION',
           type,
           sectionId,
           ...(opts?.scheduleId ? { scheduleId: opts.scheduleId } : {}),
@@ -202,7 +208,249 @@ export class NotificationsService {
       }
     }
 
-    return { sent: enrollments.length, pushSent };
+    return { sent: enrollments.length, pushSent, announceId };
+  }
+
+  async announceToAllStudents(
+    title: string,
+    body: string,
+    type: AnnouncementType = 'GENERAL',
+    target?: {
+      facultyId?: string;
+      departmentId?: string;
+      yearLevelId?: string;
+    },
+  ) {
+    const students = await this.prisma.student.findMany({
+      where: {
+        ...(target?.facultyId ? { facultyId: target.facultyId } : {}),
+        ...(target?.departmentId ? { departmentId: target.departmentId } : {}),
+        ...(target?.yearLevelId ? { yearLevelId: target.yearLevelId } : {}),
+      },
+      select: { userId: true, deviceInfo: true },
+    });
+    if (students.length === 0) return { sent: 0, pushSent: 0 };
+
+    const announceId = randomUUID();
+
+    await this.prisma.notification.createMany({
+      data: students.map((s) => ({
+        userId: s.userId,
+        title,
+        body,
+        data: {
+          announceId,
+          scope: 'GLOBAL',
+          type,
+          ...(target?.facultyId ? { facultyId: target.facultyId } : {}),
+          ...(target?.departmentId ? { departmentId: target.departmentId } : {}),
+          ...(target?.yearLevelId ? { yearLevelId: target.yearLevelId } : {}),
+        },
+      })),
+    });
+
+    let pushSent = 0;
+    for (const student of students) {
+      const deviceInfo = (student.deviceInfo ?? {}) as Record<string, unknown>;
+      const fcmToken =
+        typeof deviceInfo.fcmToken === 'string' ? deviceInfo.fcmToken : null;
+      if (fcmToken == null || fcmToken.length === 0) {
+        continue;
+      }
+      try {
+        await this.sendPushNotification(fcmToken, title, body, {
+          announceId,
+          scope: 'GLOBAL',
+          type,
+          ...(target?.facultyId ? { facultyId: target.facultyId } : {}),
+          ...(target?.departmentId ? { departmentId: target.departmentId } : {}),
+          ...(target?.yearLevelId ? { yearLevelId: target.yearLevelId } : {}),
+        });
+        pushSent += 1;
+      } catch {
+        // continue sending to other tokens
+      }
+    }
+
+    return { sent: students.length, pushSent, announceId };
+  }
+
+  async getAdminHistory(filters: { type?: string; page?: number; limit?: number }) {
+    const notifications = await this.prisma.notification.findMany({
+      where: {
+        data: {
+          path: ['scope'],
+          equals: 'GLOBAL',
+        },
+      },
+      orderBy: { sentAt: 'desc' },
+      take: Math.max(50, Math.min(filters.limit ?? 200, 1000)),
+    });
+
+    const grouped = new Map<
+      string,
+      {
+        id: string;
+        type: string;
+        title: string;
+        body: string;
+        sentAt: string;
+        sentCount: number;
+        readCount: number;
+        facultyId?: string;
+        departmentId?: string;
+        yearLevelId?: string;
+      }
+    >();
+
+    for (const n of notifications) {
+      const data = (n.data ?? {}) as Record<string, unknown>;
+      const type = typeof data.type === 'string' ? data.type : 'GENERAL';
+      if (filters.type && filters.type !== type) continue;
+
+      const announceId =
+        typeof data.announceId === 'string'
+          ? data.announceId
+          : `${type}|${n.title}|${n.body}|${n.sentAt.toISOString().slice(0, 19)}`;
+
+      const current = grouped.get(announceId);
+      if (!current) {
+        grouped.set(announceId, {
+          id: announceId,
+          type,
+          title: n.title,
+          body: n.body,
+          sentAt: n.sentAt.toISOString(),
+          sentCount: 1,
+          readCount: n.isRead ? 1 : 0,
+          facultyId:
+            typeof data.facultyId === 'string' ? data.facultyId : undefined,
+          departmentId:
+            typeof data.departmentId === 'string'
+              ? data.departmentId
+              : undefined,
+          yearLevelId:
+            typeof data.yearLevelId === 'string' ? data.yearLevelId : undefined,
+        });
+      } else {
+        current.sentCount += 1;
+        if (n.isRead) current.readCount += 1;
+      }
+    }
+
+    return {
+      announcements: Array.from(grouped.values()).sort((a, b) => b.sentAt.localeCompare(a.sentAt)),
+    };
+  }
+
+  async getTeacherHistory(
+    user: JwtPayload,
+    filters: { type?: string; scheduleId?: string; limit?: number },
+  ) {
+    if (!user.teacherId && user.role !== Role.ADMIN) {
+      throw new BadRequestException('เฉพาะอาจารย์หรือแอดมินเท่านั้น');
+    }
+
+    const schedules = await this.prisma.schedule.findMany({
+      where: {
+        ...(user.role === Role.TEACHER && user.teacherId
+          ? { teacherId: user.teacherId }
+          : {}),
+        ...(filters.scheduleId ? { id: filters.scheduleId } : {}),
+      },
+      include: { section: { include: { course: true } } },
+      orderBy: [{ createdAt: 'desc' }],
+    });
+    const sectionIds = [...new Set(schedules.map((s) => s.sectionId))];
+    if (sectionIds.length === 0)
+      return { announcements: [], cancellations: [] };
+
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: { sectionId: { in: sectionIds } },
+      select: { student: { select: { userId: true } } },
+    });
+    const studentUserIds = [
+      ...new Set(enrollments.map((e) => e.student.userId)),
+    ];
+
+    const notifications = studentUserIds.length
+      ? await this.prisma.notification.findMany({
+          where: { userId: { in: studentUserIds } },
+          orderBy: { sentAt: 'desc' },
+          take: Math.max(50, Math.min(filters.limit ?? 200, 1000)),
+        })
+      : [];
+
+    const bySection = new Map(schedules.map((s) => [s.sectionId, s]));
+    const grouped = new Map<
+      string,
+      {
+        id: string;
+        type: string;
+        title: string;
+        body: string;
+        sectionId: string;
+        scheduleId?: string;
+        classDate?: string;
+        sentAt: string;
+        sentCount: number;
+        readCount: number;
+      }
+    >();
+
+    for (const n of notifications) {
+      const data = (n.data ?? {}) as Record<string, unknown>;
+      const sectionId =
+        typeof data.sectionId === 'string' ? data.sectionId : '';
+      if (!sectionId || !bySection.has(sectionId)) continue;
+
+      const type = typeof data.type === 'string' ? data.type : 'GENERAL';
+      if (filters.type && filters.type !== type) continue;
+
+      const announceId =
+        typeof data.announceId === 'string'
+          ? data.announceId
+          : `${type}|${sectionId}|${n.title}|${n.body}|${n.sentAt.toISOString().slice(0, 19)}`;
+      const current = grouped.get(announceId);
+      if (!current) {
+        grouped.set(announceId, {
+          id: announceId,
+          type,
+          title: n.title,
+          body: n.body,
+          sectionId,
+          scheduleId:
+            typeof data.scheduleId === 'string' ? data.scheduleId : undefined,
+          classDate:
+            typeof data.classDate === 'string' ? data.classDate : undefined,
+          sentAt: n.sentAt.toISOString(),
+          sentCount: 1,
+          readCount: n.isRead ? 1 : 0,
+        });
+      } else {
+        current.sentCount += 1;
+        if (n.isRead) current.readCount += 1;
+      }
+    }
+
+    const announcements = Array.from(grouped.values()).sort((a, b) =>
+      b.sentAt.localeCompare(a.sentAt),
+    );
+
+    const cancellations = await this.prisma.scheduleCancellation.findMany({
+      where: { scheduleId: { in: schedules.map((s) => s.id) } },
+      include: {
+        schedule: {
+          include: {
+            section: { include: { course: true } },
+          },
+        },
+      },
+      orderBy: { classDate: 'desc' },
+      take: Math.max(20, Math.min(filters.limit ?? 200, 1000)),
+    });
+
+    return { announcements, cancellations };
   }
 
   async registerFcmToken(userId: string, fcmToken: string) {

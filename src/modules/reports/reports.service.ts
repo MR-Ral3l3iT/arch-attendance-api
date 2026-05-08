@@ -79,15 +79,7 @@ export class ReportsService {
         select: { date: true },
       }),
       this.prisma.attendanceRecord.findMany({
-        where: {
-          scheduleId,
-          classDate: {
-            gte: schedule.semester.startDate,
-            lte: new Date(
-              Math.min(Date.now(), schedule.semester.endDate.getTime()),
-            ),
-          },
-        },
+        where: { scheduleId },
         select: {
           studentId: true,
           status: true,
@@ -122,8 +114,17 @@ export class ReportsService {
       eligibleDateKeys.push(k);
     }
 
+    // รวม "วันที่มีการบันทึก attendance จริง" เข้า denominator ด้วย
+    // เพื่อรองรับกรณีข้อมูลภาคเรียนเก่า/ปรับคาบย้อนหลัง แต่ยังมี record เกิดขึ้นจริง
+    for (const r of records) {
+      const k = dateKeyUTC(r.classDate);
+      if (holidayKeys.has(k)) continue;
+      if (cancelKeys.has(k)) continue;
+      if (!eligibleDateKeys.includes(k)) eligibleDateKeys.push(k);
+    }
+
     const eligibleSet = new Set(eligibleDateKeys);
-    const totalClasses = eligibleDateKeys.length;
+    const totalClasses = eligibleSet.size;
 
     const byStudent = new Map<string, typeof records>();
     for (const r of records) {
@@ -155,16 +156,19 @@ export class ReportsService {
         ).length;
         const leaveUnapproved =
           count(recs, AttendanceStatus.LEAVE) - leaveApproved;
-        const present = onTime + late + leaveApproved;
+        const absentTotal = absent + Math.max(0, leaveUnapproved);
+        const presentTotal = onTime + late + leaveApproved;
         return {
           student: e.student,
           onTime,
           late,
-          absent: absent + Math.max(0, leaveUnapproved),
+          absent: absentTotal,
           leave: leaveApproved,
           notChecked: totalClasses - recs.length,
           attendanceRate:
-            totalClasses > 0 ? Math.round((present / totalClasses) * 100) : 100,
+            totalClasses > 0
+              ? Math.round((presentTotal / totalClasses) * 100)
+              : 100,
         };
       }),
     };

@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -18,6 +19,7 @@ import { NotificationsService } from './notifications.service';
 import {
   SendPushNotificationDto,
   AnnounceToSectionDto,
+  AnnounceToAllStudentsDto,
   RegisterFcmTokenDto,
 } from './dto/notifications.dto';
 
@@ -39,6 +41,39 @@ export class NotificationsController {
   async getUnreadCount(@CurrentUser() user: JwtPayload) {
     const count = await this.notificationsService.getUnreadCount(user.sub);
     return { count };
+  }
+
+  @Get('teacher/history')
+  @Roles(Role.TEACHER, Role.ADMIN)
+  @ApiOperation({
+    summary: 'ประวัติยกคลาสและสถานะประกาศของอาจารย์ (กรองตามประเภทได้)',
+  })
+  getTeacherHistory(
+    @CurrentUser() user: JwtPayload,
+    @Query('type') type?: string,
+    @Query('scheduleId') scheduleId?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.notificationsService.getTeacherHistory(user, {
+      type,
+      scheduleId,
+      limit: limit ? parseInt(limit, 10) : 100,
+    });
+  }
+
+  @Get('admin/history')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'ประวัติประกาศจากส่วนกลางของผู้ดูแลระบบ' })
+  getAdminHistory(
+    @Query('type') type?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.notificationsService.getAdminHistory({
+      type,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 100,
+    });
   }
 
   @Patch(':id/read')
@@ -83,6 +118,22 @@ export class NotificationsController {
         scheduleId: dto.scheduleId,
         classDate: dto.classDate,
         actor: user,
+      },
+    );
+  }
+
+  @Post('announce-all')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'ผู้ดูแลระบบส่งประกาศถึงนักศึกษาทั้งหมด' })
+  async announceAll(@Body() dto: AnnounceToAllStudentsDto) {
+    return this.notificationsService.announceToAllStudents(
+      dto.title,
+      dto.body,
+      dto.type ?? 'GENERAL',
+      {
+        facultyId: dto.facultyId,
+        departmentId: dto.departmentId,
+        yearLevelId: dto.yearLevelId,
       },
     );
   }

@@ -78,6 +78,49 @@ export class AnnounceToSectionDto {
   classDate?: string;
 }
 
+export class AnnounceToAllStudentsDto {
+  @ApiProperty({ example: 'ประกาศจากส่วนกลาง' })
+  @IsString()
+  title!: string;
+
+  @ApiProperty({ example: 'ขอให้นักศึกษาทุกคนตรวจสอบตารางเรียนล่าสุดในแอป' })
+  @IsString()
+  body!: string;
+
+  @ApiPropertyOptional({
+    description: 'ประเภทประกาศ',
+    enum: ANNOUNCEMENT_TYPES,
+    default: 'GENERAL',
+  })
+  @IsOptional()
+  @IsIn(ANNOUNCEMENT_TYPES)
+  type?: AnnouncementType;
+
+  @ApiPropertyOptional({
+    example: 'clxxx...',
+    description: 'ส่งเฉพาะนักศึกษาในคณะ (optional)',
+  })
+  @IsOptional()
+  @IsString()
+  facultyId?: string;
+
+  @ApiPropertyOptional({
+    example: 'clxxx...',
+    description: 'ส่งเฉพาะนักศึกษาในสาขา (optional)',
+  })
+  @IsOptional()
+  @IsString()
+  departmentId?: string;
+
+  @ApiPropertyOptional({
+    example: 'clxxx...',
+    description: 'ส่งเฉพาะนักศึกษาในชั้นปี (optional)',
+  })
+  @IsOptional()
+  @IsString()
+  yearLevelId?: string;
+}
+
 export class RegisterFcmTokenDto {
   @ApiProperty({ example: '<FCM_TOKEN>' })
   @IsString()
