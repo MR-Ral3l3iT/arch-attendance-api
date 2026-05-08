@@ -70,11 +70,20 @@ export class NotificationsController {
   @Post('announce')
   @Roles(Role.ADMIN, Role.TEACHER)
   @ApiOperation({ summary: 'อาจารย์ส่งประกาศถึงนักศึกษาทุกคนในกลุ่มเรียน' })
-  async announce(@Body() dto: AnnounceToSectionDto) {
+  async announce(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: AnnounceToSectionDto,
+  ) {
     return this.notificationsService.announceToSection(
       dto.sectionId,
       dto.title,
       dto.body,
+      {
+        type: dto.type ?? 'GENERAL',
+        scheduleId: dto.scheduleId,
+        classDate: dto.classDate,
+        actor: user,
+      },
     );
   }
 

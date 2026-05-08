@@ -85,4 +85,42 @@ export class SystemSettingsService {
 
     return this.getSettings();
   }
+
+  async getHolidays(semesterId: string) {
+    if (!semesterId) return [];
+    return this.prisma.holiday.findMany({
+      where: { semesterId },
+      orderBy: { date: 'asc' },
+    });
+  }
+
+  async createHoliday(dto: {
+    semesterId: string;
+    date: string;
+    name: string;
+    createdById?: string;
+  }) {
+    return this.prisma.holiday.upsert({
+      where: {
+        semesterId_date: {
+          semesterId: dto.semesterId,
+          date: new Date(dto.date),
+        },
+      },
+      create: {
+        semesterId: dto.semesterId,
+        date: new Date(dto.date),
+        name: dto.name,
+        createdById: dto.createdById,
+      },
+      update: {
+        name: dto.name,
+        createdById: dto.createdById,
+      },
+    });
+  }
+
+  async deleteHoliday(id: string) {
+    return this.prisma.holiday.delete({ where: { id } });
+  }
 }

@@ -69,6 +69,7 @@ model Semester {
   updatedAt      DateTime     @updatedAt
   schedules      Schedule[]
   sections       Section[]
+  holidays       Holiday[]
 
   @@unique([academicYearId, name])
 }
@@ -163,6 +164,7 @@ model User {
   teacher      Teacher?
   student      Student?
   auditLogs    AuditLog[] @relation("ModifiedBy")
+  createdHolidays Holiday[] @relation("HolidayCreatedBy")
 }
 
 model Teacher {
@@ -183,6 +185,7 @@ model Teacher {
   updatedAt      DateTime       @updatedAt
   schedules      Schedule[]
   leaveApprovals LeaveRequest[] @relation("ApprovedBy")
+  cancellations  ScheduleCancellation[] @relation("CancelledBy")
 }
 
 model Student {
@@ -261,6 +264,7 @@ model Schedule {
   updatedAt          DateTime            @updatedAt
   attendanceRecords  AttendanceRecord[]
   attendanceSettings AttendanceSettings?
+  cancellations      ScheduleCancellation[]
 }
 
 model Enrollment {
@@ -370,4 +374,36 @@ model SystemSettings {
   value       String
   description String?
   updatedAt   DateTime @updatedAt
+}
+
+// ─── Calendar / Exceptions (Holiday + Cancelled Class) ────────────────────────
+
+model Holiday {
+  id          String   @id @default(cuid())
+  semesterId  String
+  semester    Semester @relation(fields: [semesterId], references: [id])
+  date        DateTime // ใช้เฉพาะวันที่ (date-only)
+  name        String
+  createdById String?
+  createdBy   User?    @relation("HolidayCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([semesterId, date])
+  @@index([semesterId, date])
+}
+
+model ScheduleCancellation {
+  id            String   @id @default(cuid())
+  scheduleId    String
+  schedule      Schedule @relation(fields: [scheduleId], references: [id])
+  classDate     DateTime // ใช้เฉพาะวันที่ (date-only)
+  reason        String?
+  cancelledById String?
+  cancelledBy   Teacher? @relation("CancelledBy", fields: [cancelledById], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([scheduleId, classDate])
+  @@index([scheduleId, classDate])
 }

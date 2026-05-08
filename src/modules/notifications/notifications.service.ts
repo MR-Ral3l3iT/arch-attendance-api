@@ -1,13 +1,17 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
+  NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { getMessaging } from 'firebase-admin/messaging';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ensureFirebaseAppInitialized } from '../../common/firebase/firebase-admin';
+import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
+import { AnnouncementType } from './dto/notifications.dto';
 
 @Injectable()
 export class NotificationsService {
@@ -96,7 +100,62 @@ export class NotificationsService {
     });
   }
 
-  async announceToSection(sectionId: string, title: string, body: string) {
+  async announceToSection(
+    sectionId: string,
+    title: string,
+    body: string,
+    opts?: {
+      type?: AnnouncementType;
+      scheduleId?: string;
+      classDate?: string;
+      actor?: JwtPayload;
+    },
+  ) {
+    const type = opts?.type ?? 'GENERAL';
+    const classDate = opts?.classDate ? new Date(opts.classDate) : null;
+
+    if (type === 'CANCEL_CLASS') {
+      if (!opts?.scheduleId || !classDate) {
+        throw new BadRequestException(
+          'กรุณาระบุ scheduleId และ classDate เมื่อเลือกประเภทยกคลาส',
+        );
+      }
+      const schedule = await this.prisma.schedule.findUnique({
+        where: { id: opts.scheduleId },
+        select: { id: true, sectionId: true, teacherId: true },
+      });
+      if (!schedule) throw new NotFoundException('ไม่พบตารางเรียนที่ต้องการยกคลาส');
+      if (schedule.sectionId !== sectionId) {
+        throw new BadRequestException('scheduleId ไม่ตรงกับ section ที่ประกาศ');
+      }
+      if (
+        opts.actor?.role === Role.TEACHER &&
+        opts.actor.teacherId &&
+        schedule.teacherId !== opts.actor.teacherId
+      ) {
+        throw new BadRequestException('ไม่สามารถยกคลาสของอาจารย์ท่านอื่นได้');
+      }
+
+      await this.prisma.scheduleCancellation.upsert({
+        where: {
+          scheduleId_classDate: {
+            scheduleId: opts.scheduleId,
+            classDate,
+          },
+        },
+        create: {
+          scheduleId: opts.scheduleId,
+          classDate,
+          reason: body,
+          cancelledById: opts.actor?.teacherId,
+        },
+        update: {
+          reason: body,
+          cancelledById: opts.actor?.teacherId,
+        },
+      });
+    }
+
     const enrollments = await this.prisma.enrollment.findMany({
       where: { sectionId },
       include: { student: { select: { userId: true, deviceInfo: true } } },
@@ -109,7 +168,12 @@ export class NotificationsService {
         userId: e.student.userId,
         title,
         body,
-        data: { type: 'ANNOUNCEMENT', sectionId },
+        data: {
+          type,
+          sectionId,
+          ...(opts?.scheduleId ? { scheduleId: opts.scheduleId } : {}),
+          ...(opts?.classDate ? { classDate: opts.classDate } : {}),
+        },
       })),
     });
 
@@ -126,8 +190,10 @@ export class NotificationsService {
       }
       try {
         await this.sendPushNotification(fcmToken, title, body, {
-          type: 'ANNOUNCEMENT',
+          type,
           sectionId,
+          ...(opts?.scheduleId ? { scheduleId: opts.scheduleId } : {}),
+          ...(opts?.classDate ? { classDate: opts.classDate } : {}),
         });
         pushSent += 1;
       } catch {
