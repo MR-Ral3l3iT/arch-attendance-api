@@ -3,7 +3,8 @@ import { IsString, MinLength, IsOptional } from 'class-validator';
 
 export class LoginDto {
   @ApiProperty({
-    description: 'ชื่อผู้ใช้งาน (นศ. ใช้ email / อาจารย์+admin ใช้ username)',
+    description:
+      'ชื่อผู้ใช้งาน (นศ. ใช้ email / admin ใช้ username / อาจารย์ใช้ username หรืออีเมลที่บันทึกในระบบ)',
     example: 'somying@student.ac.th',
   })
   @IsString()

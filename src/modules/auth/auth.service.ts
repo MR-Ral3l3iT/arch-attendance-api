@@ -21,10 +21,7 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { username: dto.username },
-      include: { teacher: true, student: true },
-    });
+    const user = await this.resolveLoginUser(dto.username.trim());
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException('ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง');
@@ -156,5 +153,26 @@ export class AuthService {
 
   async hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, 12);
+  }
+
+  /** ค้นหา User จาก username; ถ้าไม่พบและข้อความเป็นรูปแบบอีเมล ให้ลองจับคู่กับ Teacher.email (อาจารย์แยก username กับ email ในฟอร์ม) */
+  private async resolveLoginUser(usernameOrEmail: string) {
+    const byUsername = await this.prisma.user.findUnique({
+      where: { username: usernameOrEmail },
+      include: { teacher: true, student: true },
+    });
+    if (byUsername) return byUsername;
+
+    if (!usernameOrEmail.includes('@')) return null;
+
+    const teacher = await this.prisma.teacher.findFirst({
+      where: {
+        email: { equals: usernameOrEmail, mode: 'insensitive' },
+      },
+      include: {
+        user: { include: { teacher: true, student: true } },
+      },
+    });
+    return teacher?.user ?? null;
   }
 }
