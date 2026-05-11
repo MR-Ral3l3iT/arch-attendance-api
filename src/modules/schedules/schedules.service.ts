@@ -163,6 +163,7 @@ export class SchedulesService {
         },
         room: { include: { building: true } },
         semester: true,
+        attendanceSettings: true,
       },
       orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
     });
@@ -229,6 +230,7 @@ export class SchedulesService {
         },
         room: { include: { building: true } },
         semester: true,
+        attendanceSettings: true,
       },
       orderBy: [{ startTime: 'asc' }],
     });

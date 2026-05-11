@@ -271,18 +271,27 @@ export class AttendanceService {
   async getScheduleStats(scheduleId: string, classDate?: string) {
     const date = classDate ? new Date(classDate) : new Date();
     date.setHours(0, 0, 0, 0);
+    const schedule = await this.prisma.schedule.findUnique({
+      where: { id: scheduleId },
+      select: { sectionId: true },
+    });
+    if (!schedule) throw new NotFoundException('ไม่พบตารางเรียน');
+    const enrolledCount = await this.prisma.enrollment.count({
+      where: { sectionId: schedule.sectionId },
+    });
     const records = await this.prisma.attendanceRecord.findMany({
       where: { scheduleId, classDate: date },
       select: { status: true },
     });
     const count = (s: string) => records.filter((r) => r.status === s).length;
+    const missingRecords = Math.max(0, enrolledCount - records.length);
     return {
-      total: records.length,
+      total: enrolledCount,
       onTime: count('ON_TIME'),
       late: count('LATE'),
       absent: count('ABSENT'),
       leave: count('LEAVE'),
-      notChecked: count('NOT_CHECKED'),
+      notChecked: count('NOT_CHECKED') + missingRecords,
     };
   }
 
