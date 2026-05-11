@@ -3,7 +3,7 @@ import * as path from 'path';
 import { ServiceUnavailableException } from '@nestjs/common';
 import { App, cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
-import sharp = require('sharp');
+import * as sharp from 'sharp';
 
 type ServiceAccountLike = {
   project_id?: string;
