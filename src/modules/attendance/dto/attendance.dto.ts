@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform, Type } from 'class-transformer';
 import {
   IsString,
   IsNumber,
@@ -21,10 +22,14 @@ export class CheckInDto {
   classDate: string;
 
   @ApiProperty({ description: 'ละติจูดปัจจุบัน', example: 13.7563 })
+  @Transform(({ value }) => Number(value))
+  @Type(() => Number)
   @IsNumber()
   latitude: number;
 
   @ApiProperty({ description: 'ลองจิจูดปัจจุบัน', example: 100.5018 })
+  @Transform(({ value }) => Number(value))
+  @Type(() => Number)
   @IsNumber()
   longitude: number;
 
