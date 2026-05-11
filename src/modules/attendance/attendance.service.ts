@@ -270,7 +270,6 @@ export class AttendanceService {
 
   async getScheduleStats(scheduleId: string, classDate?: string) {
     const date = classDate ? new Date(classDate) : new Date();
-    date.setHours(0, 0, 0, 0);
     const schedule = await this.prisma.schedule.findUnique({
       where: { id: scheduleId },
       select: { sectionId: true },
