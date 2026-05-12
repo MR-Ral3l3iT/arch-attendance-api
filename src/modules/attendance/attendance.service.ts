@@ -14,6 +14,7 @@ import {
 } from './dto/attendance.dto';
 import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { uploadBufferToFirebaseStorage } from '../../common/firebase/firebase-admin';
+import { isDeviceBindingExemptAccount } from '../../common/security/device-binding-exemptions';
 
 function haversineDistance(
   lat1: number,
@@ -52,11 +53,16 @@ export class AttendanceService {
 
     const student = await this.prisma.student.findUnique({
       where: { id: user.studentId },
+      include: { user: { select: { username: true } } },
     });
     if (!student) throw new NotFoundException('ไม่พบข้อมูลนักศึกษา');
 
     // ── 1. ตรวจ Device Binding ─────────────────────────────────────────────
-    if (student.deviceId !== dto.deviceId) {
+    const skipDeviceBinding = isDeviceBindingExemptAccount({
+      username: student.user.username,
+      email: student.email,
+    });
+    if (!skipDeviceBinding && student.deviceId !== dto.deviceId) {
       throw new ForbiddenException('อุปกรณ์ไม่ตรงกับที่ผูกไว้ในระบบ');
     }
 

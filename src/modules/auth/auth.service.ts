@@ -11,6 +11,7 @@ import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto, RefreshTokenDto } from './dto/login.dto';
 import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
+import { isDeviceBindingExemptAccount } from '../../common/security/device-binding-exemptions';
 
 @Injectable()
 export class AuthService {
@@ -32,7 +33,14 @@ export class AuthService {
       throw new UnauthorizedException('ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง');
     }
 
-    if (user.role === Role.STUDENT) {
+    const skipDeviceBinding =
+      user.role === Role.STUDENT &&
+      isDeviceBindingExemptAccount({
+        username: user.username,
+        email: user.student?.email,
+      });
+
+    if (user.role === Role.STUDENT && !skipDeviceBinding) {
       if (!dto.deviceId) {
         throw new BadRequestException('กรุณาระบุรหัสอุปกรณ์สำหรับนักศึกษา');
       }
